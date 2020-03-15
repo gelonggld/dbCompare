@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="30dbac18-5665-49b9-a45f-c6287d3600c5" name="Default Changelist" comment="" />
+    <list default="true" id="30dbac18-5665-49b9-a45f-c6287d3600c5" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/gelonggld/db2bkg/utils/codeparse/JaWorker.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/gelonggld/db2bkg/utils/codeparse/JaWorker.kt" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,9 +19,17 @@
   <component name="ExternalProjectsManager">
     <system id="GRADLE">
       <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
         <projects_view>
           <tree_state>
-            <expand />
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="db2bkt" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
             <select />
           </tree_state>
         </projects_view>
@@ -31,6 +43,9 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1Z9Aj4gYVrRvZQ5Qmxiv6SYUw5t" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -39,6 +54,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/src/main/resources" />
@@ -135,6 +151,7 @@
       <updated>1584241067092</updated>
       <workItem from="1584241068838" duration="1331000" />
       <workItem from="1584244151614" duration="5855000" />
+      <workItem from="1584279785150" duration="1316000" />
     </task>
     <servers />
   </component>
@@ -170,10 +187,10 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="650" y="241" width="540" height="540" key="StructurePopup/0.0.1920.1040@0.0.1920.1040" timestamp="1584250237248" />
-    <state x="549" y="340" key="com.intellij.ide.util.TipDialog" timestamp="1584244153876">
+    <state x="549" y="340" key="com.intellij.ide.util.TipDialog" timestamp="1584279788632">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="549" y="340" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1584244153876" />
+    <state x="549" y="340" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1584279788632" />
     <state x="569" y="116" width="667" height="801" key="find.popup" timestamp="1584244435439">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
