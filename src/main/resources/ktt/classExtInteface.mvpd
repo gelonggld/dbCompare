@@ -1,0 +1,13 @@
+package $packageInfo$
+
+import $basePath$
+import $interfacePath$
+import $beanPath$
+
+/**
+ * @author $auth$
+ *         createTime $createTime$
+ */
+class  $className$ : $baseName$<$beanName$>(), $interfaceName$ {
+
+}

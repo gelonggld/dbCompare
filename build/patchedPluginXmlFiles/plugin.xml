@@ -1,0 +1,18 @@
+<idea-plugin>
+  <version>1.0-SNAPSHOT</version>
+  <change-notes>
+      Add change notes here.&lt;br&gt;
+      &lt;em&gt;most HTML tags may be used&lt;/em&gt;</change-notes>
+  <idea-version since-build="193.6494" until-build="193.*"/>
+  <id>top.gelonggld.db2bkt</id>
+  <name>dbcompareKG</name>
+  <vendor email="gelonggld@qq.com" url="http://www.gelonggld.top">notCompany</vendor>
+  <description> 比较数据库和对象 支持mysql/oracle, 解析java/kotlin,可以根据表自动生成dao.service信息，可以根据表比较对象，可以根据对象比较表</description>
+  <depends>com.intellij.modules.platform</depends>
+  <extensions defaultExtensionNs="com.intellij"/>
+  <actions>
+    <action class="com.gelonggld.db2bkg.EntryAction" id="db2bkg" text="db2b" description="对象数据库比较">
+      <add-to-group group-id="NewGroup" anchor="last"/>
+    </action>
+  </actions>
+</idea-plugin>

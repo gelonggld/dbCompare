@@ -1,0 +1,11 @@
+package $packageInfo$;
+
+import $basePath$;
+import $beanPath$;
+
+/**
+ * @author $auth$
+ *         createTime $createTime$
+ */
+public interface $className$ extends $baseName$<$beanName$> {
+}

@@ -1,0 +1,10 @@
+package $packageInfo$;
+
+/**
+ * @author $auth$
+ *         createTime $createTime$
+ */
+public class $className$ {
+
+
+}

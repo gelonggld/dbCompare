@@ -1,0 +1,10 @@
+package $packageInfo$
+
+$importBaseModel$
+/**
+ * @author $auth$
+ *         createTime $createTime$
+ */
+class $className$:$BaseModel$<Int>(){
+
+}
