@@ -4,14 +4,17 @@ import com.gelonggld.db2bkg.constants.StrConstant
 import com.gelonggld.db2bkg.model.ModelField
 import com.gelonggld.db2bkg.tail
 import com.gelonggld.db2bkg.utils.DBConvertUtil
+import com.gelonggld.db2bkg.utils.DBConvertUtil.firstBig
+import com.gelonggld.db2bkg.utils.DBConvertUtil.simpleJavaType
 import com.gelonggld.db2bkg.utils.StrUtil
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.codeStyle.CodeStyleManager
+import org.intellij.lang.annotations.Language
 
 
 class JaWorker(val project: Project) {
-    fun addAnno2Class(annoStr: String, psiClass: PsiClass,vararg import:String) {
+    fun addAnno2Class(annoStr: String, psiClass: PsiClass, vararg import: String) {
         psiClass.modifierList!!.addAnnotation(annoStr)
     }
 
@@ -20,8 +23,7 @@ class JaWorker(val project: Project) {
     }
 
 
-
-    fun addFieldtoClass( mFieldName: String, mFileType: String, psiClass: PsiClass,commit: String?): PsiElement {
+    fun addFieldtoClass(mFieldName: String, mFileType: String, psiClass: PsiClass, commit: String?): PsiElement {
         val elementFactory = eleF()
         val field = elementFactory.createField(mFieldName, elementFactory.createTypeByFQClassName(mFileType))
         val anchor: PsiElement
@@ -31,14 +33,15 @@ class JaWorker(val project: Project) {
             anchor = psiClass.addAfter(field, findLastField(psiClass))
         }
         commit?.let {
-            addCommentToField(commit,anchor,psiClass)
+            addCommentToField(commit, anchor, psiClass)
         }
         return anchor
     }
 
 
     fun addCommentToField(commit: String, anchor: PsiElement, psiClass: PsiClass) {
-        val psiComment = eleF().createCommentFromText(StrConstant.COMMENT_HEAD + commit + StrConstant.COMMENT_TAIL, anchor)
+        val psiComment =
+            eleF().createCommentFromText(StrConstant.COMMENT_HEAD + commit + StrConstant.COMMENT_TAIL, anchor)
         psiClass.addBefore(psiComment, anchor)
     }
 
@@ -50,9 +53,9 @@ class JaWorker(val project: Project) {
     }
 
 
-    fun getSet( mFieldName: String, mFileType: String, psiClass: PsiClass, anchor: PsiElement) {
-        val psiGetMethod = createGetMethod( mFieldName, mFileType, psiClass)
-        val psiSetMethod = createSetMethod( mFieldName, mFileType, psiClass)
+    fun getSet(mFieldName: String, mFileType: String, psiClass: PsiClass, anchor: PsiElement) {
+        val psiGetMethod = createGetMethod(mFieldName, mFileType, psiClass)
+        val psiSetMethod = createSetMethod(mFieldName, mFileType, psiClass)
         val addedGetMethod: PsiElement
         if (findLastMethod(psiClass) == null) {
             addedGetMethod = psiClass.addAfter(psiGetMethod, anchor)
@@ -63,43 +66,32 @@ class JaWorker(val project: Project) {
     }
 
 
-    private fun createGetMethod( mFieldName: String, mFileType: String, psiClass: PsiClass): PsiMethod {
+    private fun createGetMethod(mFieldName: String, mFileType: String, psiClass: PsiClass): PsiMethod {
         val getText = StringBuffer()
         getText.append("public ")
-                .append(DBConvertUtil.simpleJavaType(mFileType))
-                .append(" get")
-                .append(DBConvertUtil.firstBig(mFieldName))
-                .append("() {\n")
-                .append("return this.")
-                .append(mFieldName)
-                .append(";\n")
-                .append("}")
+            .append(DBConvertUtil.simpleJavaType(mFileType))
+            .append(" get")
+            .append(DBConvertUtil.firstBig(mFieldName))
+            .append("() {\n")
+            .append("return this.")
+            .append(mFieldName)
+            .append(";\n")
+            .append("}")
         return eleF().createMethodFromText(getText.toString(), psiClass)
     }
 
-    private fun createSetMethod( mFieldName: String, mFileType: String, psiClass: PsiClass): PsiMethod {
-        val setText = StringBuffer()
-        setText.append("public ")
-                .append(psiClass.name)
-                .append(" set")
-                .append(DBConvertUtil.firstBig(mFieldName))
-                .append("(")
-                .append(DBConvertUtil.simpleJavaType(mFileType))
-                .append(" ")
-                .append(mFieldName)
-                .append(") {\n")
-                .append("this.")
-                .append(mFieldName)
-                .append("=")
-                .append(mFieldName)
-                .append(";\n")
-                .append("return this;\n")
-                .append("}")
-        return eleF().createMethodFromText(setText.toString(), psiClass)
+    private fun createSetMethod(mFieldName: String, mFileType: String, psiClass: PsiClass): PsiMethod {
+        @Language("JAVA")
+        val setText = """public set${firstBig(mFieldName)}(${simpleJavaType(mFileType)} $mFieldName) {
+            |   this.$mFieldName = $mFieldName;
+            |   return this;
+            |}
+        """.trimMargin()
+        return eleF().createMethodFromText(setText, psiClass)
     }
 
 
-    fun formatClass( psiClass: PsiClass) {
+    fun formatClass(psiClass: PsiClass) {
         val codeStyleManager = CodeStyleManager.getInstance(project)
         codeStyleManager.reformat(psiClass)
     }
@@ -111,16 +103,19 @@ class JaWorker(val project: Project) {
         } else psiClass.methods[psiClass.methods.size - 1]
     }
 
-    fun addAnnotationToField(annoStr: String, element: PsiElement, psiClass: PsiClass,vararg import: String) {
+    fun addAnnotationToField(annoStr: String, element: PsiElement, psiClass: PsiClass, vararg import: String) {
         val psiAnnotation = eleF().createAnnotationFromText(annoStr, null)
         psiClass.addBefore(psiAnnotation, element)
     }
 
 
-    fun findTargetTable(psiClass: PsiClass,annoStr:String,tableNameSign:String):String?{
+    fun findTargetTable(psiClass: PsiClass, annoStr: String, tableNameSign: String): String? {
         val modifierList = psiClass.modifierList ?: return null
         val annotation = modifierList.annotations.firstOrNull { it.qualifiedName?.tail() == annoStr }
-        return annotation?.parameterList?.attributes?.firstOrNull { it.name == tableNameSign }?.value?.text?.replace("\"".toRegex(), "")
+        return annotation?.parameterList?.attributes?.firstOrNull { it.name == tableNameSign }?.value?.text?.replace(
+            "\"".toRegex(),
+            ""
+        )
     }
 
     fun findFieldByName(fieldName: String, psiClass: PsiClass): PsiElement? {
@@ -139,7 +134,7 @@ class JaWorker(val project: Project) {
 
     fun getNoteFromField(field: PsiField): String {
         val sb = StringBuffer()
-        val docComm = field.docComment?:return ""
+        val docComm = field.docComment ?: return ""
         val psiElements = docComm.descriptionElements
         for (psiElement in psiElements) {
             val noteInfo = psiElement.text.replace("[\\s]+".toRegex(), " ").trim { it <= ' ' }
