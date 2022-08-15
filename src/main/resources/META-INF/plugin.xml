@@ -1,9 +1,23 @@
 <idea-plugin>
-    <id>top.gelonggld.db2bkt</id>
-    <name>dbcompareKG</name>
+    <id>top.gelonggld.dbcompare</id>
+    <name>DBCompare</name>
     <vendor email="gelonggld@qq.com" url="http://www.gelonggld.top">notCompany</vendor>
 
-    <description> 比较数据库和对象 支持mysql/oracle, 解析java/kotlin,可以根据表自动生成dao.service信息，可以根据表比较对象，可以根据对象比较表</description>
+    <description>
+        比较数据库和对象
+        1 可以根据表自动生成entity、dao、service class
+        2  也可以根据entity一键生成表，可以比较表和entity
+        3 并一键将差异的字段写入数据库或者entity中.
+        支持数据库:mariaDB/mysql/oracle.
+        支持语言:java/kotlin
+
+        Compare databases and objects
+        1 can automatically generate entity, dao, service class according to the table
+        2 You can also generate a table according to the entity with one key, and you can compare the table and the entity
+        3 and write the difference fields into the database or entity with one click.
+        Supported database: mariaDB/mysql/oracle.
+        Supported language: java/kotlin
+    </description>
 
     <depends>com.intellij.modules.platform</depends>
 
