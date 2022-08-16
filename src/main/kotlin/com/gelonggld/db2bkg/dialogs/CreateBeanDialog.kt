@@ -1,5 +1,19 @@
 package com.gelonggld.db2bkg.dialogs
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.ComposePanel
 import com.gelonggld.db2bkg.constants.StrConstant
 import com.gelonggld.db2bkg.exceptions.CreateFileException
 import com.gelonggld.db2bkg.model.DBField
@@ -18,14 +32,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiManager
 import com.intellij.psi.search.GlobalSearchScope
-import javafx.application.Platform
-import javafx.collections.FXCollections
-import javafx.embed.swing.JFXPanel
-import javafx.scene.Group
-import javafx.scene.Scene
-import javafx.scene.control.*
-import javafx.scene.control.cell.PropertyValueFactory
-import javafx.scene.layout.HBox
 import javax.swing.*
 import java.awt.event.*
 import java.io.BufferedReader
@@ -44,8 +50,6 @@ class CreateBeanDialog() : JDialog() {
 
 
     lateinit var contentPane: JPanel
-    lateinit var buttonOK: JButton
-    lateinit var buttonCancel: JButton
     lateinit var content: JPanel
     lateinit var errorInfo: JLabel
     private var jfxPanel: JFXPanel
@@ -55,16 +59,16 @@ class CreateBeanDialog() : JDialog() {
     private var dbTableNames: List<String>? = null
     private lateinit var connection: Connection
     private lateinit var tableLists: List<TableList>
-
-    private lateinit var mapperInput: TextField
-    private lateinit var serviceInput: TextField
-    private lateinit var beanInput: TextField
-    private lateinit var serviceImplInput: TextField
-    private var jumpFirstLine: CheckBox? = null
-    private lateinit var genKtFile: CheckBox
     private var ySpan = 30
     private var xSpan = 600
     private var xSpan1 = 1200
+
+    val beanbase = mutableStateOf(ProperUtil.readPath(StrConstant.BEAN_PATH))
+    val mappterbase = mutableStateOf(ProperUtil.readPath(StrConstant.MAPPER_PARENT_PATH))
+    val servicebase = mutableStateOf(ProperUtil.readPath(StrConstant.SERVICE_PARENT_PATH))
+    val serviceImplbase = mutableStateOf(ProperUtil.readPath(StrConstant.SERVICEIMPL_PARENT_PATH))
+    val jumpFirstLine = mutableStateOf(ProperUtil.readPath(StrConstant.AUTO_PASS_LINE))
+    val genKtFile =  mutableStateOf(ProperUtil.readPath(StrConstant.GEN_KT_FILE))
 
 
     private val currentDate: String
@@ -74,30 +78,73 @@ class CreateBeanDialog() : JDialog() {
         }
 
     init {
-        setContentPane(contentPane)
         isModal = true
-        getRootPane().defaultButton = buttonOK
-
-        buttonOK.addActionListener { onOK() }
-
-        buttonCancel.addActionListener { onCancel() }
-
-        // call onCancel() when cross is clicked
+        val composePanel = ComposePanel()
+        contentPane.add(composePanel)
+        contentPane.registerKeyboardAction(
+            { dispose() },
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+            JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
+        )
         defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
         addWindowListener(object : WindowAdapter() {
             override fun windowClosing(e: WindowEvent?) {
-                onCancel()
+                dispose()
             }
         })
 
+
+        // call onCancel() when cross is clicked
+
+
         // call onCancel() on ESCAPE
-        contentPane.registerKeyboardAction({ onCancel() }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+
         jfxPanel = JFXPanel()
         content.add(jfxPanel)
     }
 
-    constructor(project: Project, dbTableNames: List<String>, dbName: String, connection: Connection, dir: VirtualFile) : this() {
+
+    @Preview
+    @Composable
+    fun content() {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("创建实例") },
+                    navigationIcon = {
+                        IconButton(onClick = { dispose() }) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = null
+                            )
+                        }
+                    }
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { onOK() }) {
+                    Text(text = "确定")
+                }
+            }
+        ) {
+            Column (modifier = Modifier.fillMaxSize()){
+                Row (modifier = Modifier.fillMaxWidth()){
+                    textPanel("bean继承",beanbase,StrConstant.BEAN_PATH)
+                    textPanel("mapper继承",mappterbase,StrConstant.MAPPER_PARENT_PATH)
+                    textPanel("service继承",servicebase,StrConstant.SERVICE_PARENT_PATH)
+                    textPanel("serviceImpl继承",serviceImplbase,StrConstant.SERVICEIMPL_PARENT_PATH)
+                    checkPanel("跳过第一个下划线",jumpFirstLine,StrConstant.AUTO_PASS_LINE)
+                    checkPanel("kotlin",genKtFile,StrConstant.GEN_KT_FILE)
+                }
+            }
+        }
+    }
+
+
+    constructor (
+        project: Project,
+        dbTableNames: List<String>, dbName: String, connection: Connection, dir: VirtualFile
+    ) : this() {
         this.project = project
         this.dbTableNames = dbTableNames
         this.connection = connection
@@ -114,7 +161,7 @@ class CreateBeanDialog() : JDialog() {
         Platform.runLater {
             val root = Group()
             val scene = Scene(root, javafx.scene.paint.Color.ALICEBLUE)
-            beanInput = allToPanel("bean继承",StrConstant.BEAN_PATH,0,0,root)
+            beanInput = allToPanel("bean继承", StrConstant.BEAN_PATH, 0, 0, root)
             mapperInput = allToPanel("mapper继承", StrConstant.MAPPER_PARENT_PATH, xSpan, 0, root)
             serviceInput = allToPanel("service继承", StrConstant.SERVICE_PARENT_PATH, xSpan1, 0, root)
             serviceImplInput = allToPanel("serviceImpl继承", StrConstant.SERVICEIMPL_PARENT_PATH, 0, ySpan, root)
@@ -126,22 +173,36 @@ class CreateBeanDialog() : JDialog() {
         }
     }
 
+    @Composable
+    fun RowScope.textPanel(label: String,state: MutableState<String>,key:String) {
+        Text(state.value)
+        Button(onClick = {selectFilePath(project, state, key)}) {
+            Text(label)
+        }
+    }
 
-    private fun selectFilePath(project: Project, textField: TextField, propName: String) {
+    @Composable
+    fun RowScope.checkPanel(label: String,state: MutableState<String>,key: String) {
+        Text(label)
+        Checkbox(state.value == "1",onCheckedChange = {ProperUtil.savePath(key,state.value)})
+    }
+
+
+
+    private fun selectFilePath(project: Project, state: MutableState<String>, key: String) {
         SwingUtilities.invokeLater {
             val chooser = TreeClassChooserFactory.getInstance(project)
                 .createNoInnerClassesScopeChooser(
                     "BaseActivity",
                     GlobalSearchScope.allScope(project),
                     ClassFilter.ALL,
-                    null)
+                    null
+                )
             chooser.showDialog()
             val parent = chooser.selected ?: return@invokeLater
-            textField.text = parent.qualifiedName
-            ProperUtil.savePath(propName, parent.qualifiedName!!, project)
+            state.value = parent.qualifiedName!!
+            ProperUtil.savePath(key, parent.qualifiedName!!)
         }
-
-
     }
 
 
@@ -187,33 +248,47 @@ class CreateBeanDialog() : JDialog() {
 
     private fun onOK() {
         // add your code here
-        createBean(tableLists.filter { it.getGenerator().isSelected }, ProperUtil.readPath(StrConstant.AUTO_PASS_LINE, project) == "Y")
+        createBean(
+            tableLists.filter { it.getGenerator().isSelected },
+            ProperUtil.readPath(StrConstant.AUTO_PASS_LINE, project) == "Y"
+        )
         SqlUtil.recycleConn(connection)
         dispose()
     }
 
     private fun createBean(collect: List<TableList>, passLine: Boolean) {
         WriteCommandAction.writeCommandAction(project).run<Throwable> {
-                for (tableList in collect) {
-                    val dbFields = SqlUtil.getDBFields(tableList.getTableName(), connection, dbName!!)
-                    val beanName = DBConvertUtil.dBTableName2Bean(tableList.getTableName(), passLine)
-                    try {
-                        val beanClass = createBeanClass(beanName, dbFields, tableList.getTableName(),"import ${beanInput.text}")
-                        if (tableList.getMapper().isSelected) {
-                            val mapperClass = createMaperClass(beanClass, mapperInput.text)
-                            createMapperXml(mapperClass.qualifiedName, beanClass.name)
-                            if (tableList.getService().isSelected) {
-                                val dataBox = bindService(beanClass, serviceInput.text)
-                                val serviceDir = findCreateDir(dir, "service")
-                                val serviceVFile = serviceDir.createChildData(null, "${beanClass.name!!}Service.${FileDispatch.tail()}")
-                                writeFileFromTemplet(serviceVFile, "${FileDispatch.pre()}/interface.mvpd", dataBox)
-                                val serviceClass = FileDispatch.findClass(serviceVFile) ?: throw CreateFileException("在创建${beanClass.name!!}Service.${FileDispatch.tail()} 时发生异常")
-                                createServiceImplClass(beanClass, serviceImplInput.text, serviceClass, serviceDir, mapperClass)
-                            }
+            for (tableList in collect) {
+                val dbFields = SqlUtil.getDBFields(tableList.getTableName(), connection, dbName!!)
+                val beanName = DBConvertUtil.dBTableName2Bean(tableList.getTableName(), passLine)
+                try {
+                    val beanClass =
+                        createBeanClass(beanName, dbFields, tableList.getTableName(), "import ${beanInput.text}")
+                    if (tableList.getMapper().isSelected) {
+                        val mapperClass = createMaperClass(beanClass, mapperInput.text)
+                        createMapperXml(mapperClass.qualifiedName, beanClass.name)
+                        if (tableList.getService().isSelected) {
+                            val dataBox = bindService(beanClass, serviceInput.text)
+                            val serviceDir = findCreateDir(dir, "service")
+                            val serviceVFile = serviceDir.createChildData(
+                                null,
+                                "${beanClass.name!!}Service.${FileDispatch.tail()}"
+                            )
+                            writeFileFromTemplet(serviceVFile, "${FileDispatch.pre()}/interface.mvpd", dataBox)
+                            val serviceClass = FileDispatch.findClass(serviceVFile)
+                                ?: throw CreateFileException("在创建${beanClass.name!!}Service.${FileDispatch.tail()} 时发生异常")
+                            createServiceImplClass(
+                                beanClass,
+                                serviceImplInput.text,
+                                serviceClass,
+                                serviceDir,
+                                mapperClass
+                            )
                         }
-                    } catch (e: IOException) {
-                        errorL(e.message)
                     }
+                } catch (e: IOException) {
+                    errorL(e.message)
+                }
 
             }
         }
@@ -248,9 +323,6 @@ class CreateBeanDialog() : JDialog() {
     }
 
 
-
-
-
     private fun errorL(message: String?) {
         message?.let {
             errorInfo.text = message
@@ -259,19 +331,37 @@ class CreateBeanDialog() : JDialog() {
 
 
     @Throws(IOException::class)
-    private fun createServiceImplClass(beanClass: PsiClass, basePath: String, serviceClass: PsiClass, serviceVir: VirtualFile, mapperClass: PsiClass): PsiClass {
+    private fun createServiceImplClass(
+        beanClass: PsiClass,
+        basePath: String,
+        serviceClass: PsiClass,
+        serviceVir: VirtualFile,
+        mapperClass: PsiClass
+    ): PsiClass {
         val dataBox = bindServiceImpl(beanClass, basePath, serviceClass)
-        val virtualFile = createFromTemplete(serviceVir, "impl", "${beanClass.name!!}ServiceImpl.${FileDispatch.tail()}",
-                "${FileDispatch.pre()}/classExtInteface.mvpd", dataBox)
-        val psiClass = FileDispatch.findClass(virtualFile) ?: throw CreateFileException("在创建--${beanClass.name}ServiceImpl 时发生错误")
-        FileDispatch.addAnnotationToClass("Service", psiClass,"org.springframework.stereotype.Service")
-        val field = FileDispatch.addFieldtoClass( DBConvertUtil.firstLow(mapperClass.name!!), mapperClass.qualifiedName!!, psiClass,null,true)
-        FileDispatch.addAnnotationToField("Autowired", field, psiClass,"org.springframework.beans.factory.annotation.Autowired")
+        val virtualFile = createFromTemplete(
+            serviceVir, "impl", "${beanClass.name!!}ServiceImpl.${FileDispatch.tail()}",
+            "${FileDispatch.pre()}/classExtInteface.mvpd", dataBox
+        )
+        val psiClass = FileDispatch.findClass(virtualFile)
+            ?: throw CreateFileException("在创建--${beanClass.name}ServiceImpl 时发生错误")
+        FileDispatch.addAnnotationToClass("Service", psiClass, "org.springframework.stereotype.Service")
+        val field = FileDispatch.addFieldtoClass(
+            DBConvertUtil.firstLow(mapperClass.name!!),
+            mapperClass.qualifiedName!!,
+            psiClass,
+            null,
+            true
+        )
+        FileDispatch.addAnnotationToField(
+            "Autowired",
+            field,
+            psiClass,
+            "org.springframework.beans.factory.annotation.Autowired"
+        )
         return psiClass
 
     }
-
-
 
 
     private fun createMapperXml(qualifiedName: String?, beanName: String?) {
@@ -280,7 +370,13 @@ class CreateBeanDialog() : JDialog() {
 
     }
 
-    private fun createFromTemplete(base: VirtualFile, dirname: String, fileName: String, templeteName: String, dataBox: DataBox): VirtualFile {
+    private fun createFromTemplete(
+        base: VirtualFile,
+        dirname: String,
+        fileName: String,
+        templeteName: String,
+        dataBox: DataBox
+    ): VirtualFile {
         val mapperDir = findCreateDir(base, dirname)
         val child = mapperDir.createChildData(null, fileName)
         writeFileFromTemplet(child, templeteName, dataBox)
@@ -288,30 +384,40 @@ class CreateBeanDialog() : JDialog() {
     }
 
 
-
     private fun createMaperClass(beanClass: PsiClass, basePath: String): PsiClass {
         val mapperDir = findCreateDir(dir, "dao")
         val child = mapperDir.createChildData(null, "${beanClass.name!!}Mapper.${FileDispatch.tail()}")
         val dataBox = bindMapper(mapperDir, basePath, beanClass)
         writeFileFromTemplet(child, "${FileDispatch.pre()}/interface.mvpd", dataBox)
-        return FileDispatch.findClass(child) ?: throw CreateFileException("在创建--${beanClass.name}Mapper.${FileDispatch.tail()} 时发生错误")
+        return FileDispatch.findClass(child)
+            ?: throw CreateFileException("在创建--${beanClass.name}Mapper.${FileDispatch.tail()} 时发生错误")
     }
 
-    private fun createBeanClass(beanName: String, dbFields: List<DBField>?, tableName: String,importBaseModel:String): PsiClass {
+    private fun createBeanClass(
+        beanName: String,
+        dbFields: List<DBField>?,
+        tableName: String,
+        importBaseModel: String
+    ): PsiClass {
         val modelDir = findCreateDir(dir, "model")
         val child = modelDir.createChildData(null, "$beanName.${FileDispatch.tail()}")
-        val dataBox = buildBean(modelDir, beanName,importBaseModel)
+        val dataBox = buildBean(modelDir, beanName, importBaseModel)
         writeFileFromTemplet(child, "${FileDispatch.pre()}/class.mvpd", dataBox)
         val beanClass = FileDispatch.findClass(child) ?: throw CreateFileException("无法创建--$beanName")
-        FileDispatch.addAnnotationToClass("Table(name = \"$tableName\")",beanClass,"javax.persistence.Table")
-        dbFields!!.forEach {  gener(it, beanClass) }
-        FileDispatch.formatClass( beanClass)
+        FileDispatch.addAnnotationToClass("Table(name = \"$tableName\")", beanClass, "javax.persistence.Table")
+        dbFields!!.forEach { gener(it, beanClass) }
+        FileDispatch.formatClass(beanClass)
         return beanClass
     }
 
     private fun gener(dbField: DBField, psiClass: PsiClass) {
-        FileDispatch.addFieldAndGetSet( DBConvertUtil.dBField2Bean(dbField.name!!), DBConvertUtil.getDB2BeanMapType(dbField.type!!,FileDispatch.kt()),
-                dbField.comment!!,dbField.isPri, psiClass)
+        FileDispatch.addFieldAndGetSet(
+            DBConvertUtil.dBField2Bean(dbField.name!!),
+            DBConvertUtil.getDB2BeanMapType(dbField.type!!, FileDispatch.kt()),
+            dbField.comment!!,
+            dbField.isPri,
+            psiClass
+        )
     }
 
 
@@ -379,12 +485,12 @@ class CreateBeanDialog() : JDialog() {
     private fun bindMapper(mapperDir: VirtualFile, basePath: String, beanClass: PsiClass): DataBox {
         val dataBox = DataBox()
         dataBox.packageInfo = getPackName(mapperDir)
-        bindBaseData(dataBox,basePath,beanClass)
+        bindBaseData(dataBox, basePath, beanClass)
         return dataBox
     }
 
 
-    private fun buildBean(modelDir: VirtualFile, beanName: String,importBaseModel:String): DataBox {
+    private fun buildBean(modelDir: VirtualFile, beanName: String, importBaseModel: String): DataBox {
         val dataBox = DataBox()
         dataBox.packageInfo = getPackName(modelDir)
         dataBox.auth = username
@@ -444,7 +550,11 @@ class CreateBeanDialog() : JDialog() {
     }
 
 
-    private fun createTableColumn(columnName: String, minWidth: Int, mName: PropertyValueFactory<TableList, Any>): TableColumn<TableList, Any> {
+    private fun createTableColumn(
+        columnName: String,
+        minWidth: Int,
+        mName: PropertyValueFactory<TableList, Any>
+    ): TableColumn<TableList, Any> {
         val mField = TableColumn<TableList, Any>(columnName)
         mField.minWidth = minWidth.toDouble()
         mField.cellValueFactory = mName
