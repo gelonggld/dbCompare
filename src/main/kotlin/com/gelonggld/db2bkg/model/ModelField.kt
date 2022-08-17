@@ -8,19 +8,10 @@ import com.intellij.psi.PsiField
 class ModelField {
 
 
-    var type: String? = null
-    var name: String? = null
+    lateinit var type: String
+    lateinit var name: String
     var comment: String? = null
     var ext: String? = null
-
-    companion object {
-
-
-
-
-
-
-    }
 
 
 }

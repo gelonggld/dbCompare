@@ -1,106 +1,116 @@
 package com.gelonggld.db2bkg.dialogs
 
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.ComposePanel
+import androidx.compose.ui.graphics.Color
 import com.gelonggld.db2bkg.model.TableCreate
 import com.gelonggld.db2bkg.utils.db.SqlUtil
 import com.gelonggld.db2bkg.utils.DialogUtil
-import com.gelonggld.db2bkg.utils.JFXUtil
 import com.gelonggld.db2bkg.utils.codeparse.FileDispatch
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiField
-import javafx.application.Platform
-import javafx.collections.FXCollections
-import javafx.embed.swing.JFXPanel
-import javafx.scene.Group
-import javafx.scene.Scene
-import javafx.scene.control.TableColumn
-import javafx.scene.control.TableView
-import javafx.scene.control.cell.PropertyValueFactory
 import javax.swing.*
 import java.awt.event.*
 import java.sql.Connection
 
-class CreateTableDialog() : JDialog() {
-    lateinit var contentPane: JPanel
-    lateinit var buttonOK: JButton
-    lateinit var buttonCancel: JButton
-    lateinit var content: JPanel
-    lateinit var errorInfo: JLabel
-    private var jfxPanel: JFXPanel
-    private lateinit var conn: Connection
-    private lateinit var tableCreates: List<TableCreate>
-    private lateinit var tableView: TableView<TableCreate>
-    lateinit var tableName: String
-
-
+class CreateTableDialog(
+    val conn: Connection,
+    val tableName: String,
+    selectFile: VirtualFile
+) : JDialog() {
+    private var tableCreates = FileDispatch.allField(selectFile)?.map { TableCreate(it,FileDispatch.ifKt(selectFile)) } ?: ArrayList()
+    private val error = mutableStateOf<String?>(null)
     init {
-        setContentPane(contentPane)
         isModal = true
-        getRootPane().defaultButton = buttonOK
-
-        buttonOK.addActionListener { onOK() }
-
-        buttonCancel.addActionListener { onCancel() }
-
-        // call onCancel() when cross is clicked
-        defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
+        DialogUtil.centSelf(this, 1600, 900)
         addWindowListener(object : WindowAdapter() {
             override fun windowClosing(e: WindowEvent?) {
                 onCancel()
             }
         })
+        defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
+        val composePanel = ComposePanel()
+        contentPane.add(composePanel)
+        composePanel.setContent { content() }
 
-        // call onCancel() on ESCAPE
-        contentPane.registerKeyboardAction({ onCancel() }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-        DialogUtil.centSelf(this, 1600, 900)
-        jfxPanel = JFXPanel()
-        content.add(jfxPanel)
     }
 
-    constructor(conn: Connection, selectFile: VirtualFile, tableName: String) : this() {
-        this.conn = conn
-        this.tableName = tableName
-        val psiFields  = FileDispatch.allField(selectFile)
-        this.tableCreates = psiFields?.map { TableCreate(it,FileDispatch.ifKt(selectFile)) } ?: ArrayList()
-        JFXUtil.addTable(jfxPanel,createTableView())
+    @Composable
+    fun content() {
+        Scaffold (
+            topBar = { topBar()},
+            floatingActionButton = { okButton() }
+                ){
+            Column (modifier = Modifier.fillMaxSize()){
+                Row (modifier = Modifier.fillMaxWidth()){ tableHead() }
+                error.value?.let { Text(color = Color.Red, text = it) }
+                tableCreates.forEach { Row (modifier = Modifier.fillMaxWidth()){createItem(it)} }
+            }
+        }
     }
 
-
-
-    private fun createTableView(): TableView<*> {
-        tableView = TableView()
-        tableView.minWidth = 1580.0
-        createTableTitle(tableView)
-        return tableView
+    @Composable
+    fun createItem(tableCreate: TableCreate) {
+        Checkbox(tableCreate.isPri.value,onCheckedChange = {
+            tableCreate.isPri.value = it
+            if(it) tableCreate.canNull.value = false
+        } )
+        Text(tableCreate.fieldName.value)
+        Text(tableCreate.fieldType.value)
+        Text(tableCreate.fieldComment.value?:"")
+        Text(tableCreate.fieldRang.value.toString())
+        Text(tableCreate.defaultValue.value)
+        Checkbox(tableCreate.canNull.value,onCheckedChange = {tableCreate.canNull.value = it})
+        Checkbox(tableCreate.autoIncrement.value,onCheckedChange = {tableCreate.autoIncrement.value = it})
+        Text(tableCreate.dbFieldName.value)
+        Text(tableCreate.dbFieldType.value)
+        Checkbox(tableCreate.isKt.value,onCheckedChange = { tableCreate.isKt.value = it})
     }
 
-    private fun createTableTitle(tableView: TableView<TableCreate>) {
-        val isPri = createTableColumn("主键", 150, PropertyValueFactory("isPri"))
-        val fieldName = createTableColumn("模型字段名", 150, PropertyValueFactory("fieldName"))
-        val fieldType = createTableColumn("字段类型", 150, PropertyValueFactory("fieldType"))
-        val fieldComment = createTableColumn("字段注释", 150, PropertyValueFactory("fieldComment"))
-        val fieldRang = createTableColumn("长度", 150, PropertyValueFactory("fieldRang"))
-        val defaultValue = createTableColumn("默认值", 150, PropertyValueFactory("defaultValue"))
-        val canNull = createTableColumn("可空", 150, PropertyValueFactory("canNull"))
-        val autoIncrement = createTableColumn("自增长", 150, PropertyValueFactory("autoIncrement"))
-        val dbFieldName = createTableColumn("数据库字段名", 150, PropertyValueFactory("dbFieldName"))
-        val dbFieldType = createTableColumn("数据库字段类型", 150, PropertyValueFactory("dbFieldType"))
-        tableView.columns.addAll(isPri, fieldName, fieldType, fieldComment, fieldRang, defaultValue, canNull, autoIncrement, dbFieldName, dbFieldType)
-        val observableList = FXCollections.observableList(tableCreates)
-        tableView.items = observableList
+    @Composable
+    fun topBar() {
+        TopAppBar(
+            title = { Text("创建表") },
+            navigationIcon = {
+                IconButton(onClick = { dispose() }) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = null
+                    )
+                }
+            }
+        )
     }
 
-
-    private fun createTableColumn(columnName: String, minWidth: Int, mName: PropertyValueFactory<TableCreate, Any>): TableColumn<TableCreate, *> {
-        val mField = TableColumn<TableCreate,Any>(columnName)
-        mField.minWidth = minWidth.toDouble()
-        mField.cellValueFactory = mName
-        return mField
+    @Composable
+    private fun okButton() {
+        FloatingActionButton(onClick = { onOK() }) {
+            Text(text = "确定")
+        }
     }
 
+    @Composable
+    private fun RowScope.tableHead() {
+        Text(modifier = Modifier.weight(1F), text = "主键")
+        Text(modifier = Modifier.weight(1F), text = "模型字段名")
+        Text(modifier = Modifier.weight(1F), text = "字段类型")
+        Text(modifier = Modifier.weight(1F), text = "字段注释")
+        Text(modifier = Modifier.weight(1F), text = "长度")
+        Text(modifier = Modifier.weight(1F), text = "默认值")
+        Text(modifier = Modifier.weight(1F), text = "可空")
+        Text(modifier = Modifier.weight(1F), text = "自增长")
+        Text(modifier = Modifier.weight(1F), text = "数据库字段名")
+        Text(modifier = Modifier.weight(1F), text = "数据库字段类型")
+    }
 
     private fun onOK() {
         // add your code here
-        val priTableCreates = tableCreates.filter { it.isPri() }
+        val priTableCreates = tableCreates.filter { it.isPri.value }
         when {
             priTableCreates.isEmpty() -> {
                 error("选择主键")
@@ -117,7 +127,7 @@ class CreateTableDialog() : JDialog() {
 
 
     private fun error(text: String) {
-        errorInfo.text = text
+        error.value = text
     }
 
 
@@ -126,14 +136,4 @@ class CreateTableDialog() : JDialog() {
         dispose()
     }
 
-    companion object {
-
-        @JvmStatic
-        fun main(args: Array<String>) {
-            val dialog = CreateTableDialog()
-            dialog.pack()
-            dialog.isVisible = true
-            System.exit(0)
-        }
-    }
 }

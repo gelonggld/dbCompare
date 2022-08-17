@@ -147,7 +147,7 @@ object FileDispatch {
 
 
 
-    fun kt() = ProperUtil.readPath(StrConstant.GEN_KT_FILE, project) == "Y"
+    fun kt() = ProperUtil.readPath(StrConstant.GEN_KT_FILE) == "Y"
 
     fun pre() = if (kt()) "ktt" else "jaa"
 

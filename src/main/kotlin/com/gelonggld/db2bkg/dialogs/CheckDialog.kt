@@ -17,14 +17,14 @@ import java.sql.*
 import java.util.ArrayList
 
 class CheckDialog(private val project: Project, private val virtualFile: VirtualFile) : JDialog() {
-    lateinit var contentPane: JPanel
-    lateinit var buttonOK: JButton
-    lateinit var buttonCancel: JButton
-    lateinit var jUrl: JTextField
-    lateinit var jUsername: JTextField
-    lateinit var jPassword: JTextField
-    lateinit var jDriver: JTextField
-    lateinit var errorInfo: JLabel
+    private lateinit var contentPane: JPanel
+    private lateinit var buttonOK: JButton
+    private lateinit var buttonCancel: JButton
+    private lateinit var jUrl: JTextField
+    private lateinit var jUsername: JTextField
+    private lateinit var jPassword: JTextField
+    private lateinit var jDriver: JTextField
+    private lateinit var errorInfo: JLabel
 
     private var targetDbTable: String? = null
     private var dbTableNames: ArrayList<String>? = null
@@ -47,10 +47,10 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
     }
 
     private fun initInput() {
-        jUrl.text = ProperUtil.readPath(StrConstant.CONN_URL, project)
-        jUsername.text = ProperUtil.readPath(StrConstant.CONN_USERNAME, project)
-        jPassword.text = ProperUtil.readPath(StrConstant.CONN_PASSWORD, project)
-        jDriver.text = ProperUtil.readPath(StrConstant.CONN_DRIVER, project)
+        jUrl.text = ProperUtil.readPath(StrConstant.CONN_URL)
+        jUsername.text = ProperUtil.readPath(StrConstant.CONN_USERNAME)
+        jPassword.text = ProperUtil.readPath(StrConstant.CONN_PASSWORD)
+        jDriver.text = ProperUtil.readPath(StrConstant.CONN_DRIVER)
     }
 
     private fun initSelf() {
@@ -115,8 +115,8 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
     private fun showCreateBeanDialog(dbName: String) {
         @Suppress("DEPRECATION")
         val javaTableName = allTables(project.baseDir, ArrayList<String>())
-        dbTableNames!!.removeAll(javaTableName)
-        val createBeanDialog = CreateBeanDialog(project, dbTableNames!!, dbName, connection, virtualFile)
+        dbTableNames!!.removeAll(javaTableName.toSet())
+        val createBeanDialog = CreateBeanDialog(dbTableNames!!, dbName, connection, virtualFile)
         createBeanDialog.pack()
         createBeanDialog.isVisible = true
     }
@@ -181,10 +181,10 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
     }
 
     private fun saveProp() {
-        ProperUtil.savePath(StrConstant.CONN_URL, jUrl.text, project)
-        ProperUtil.savePath(StrConstant.CONN_DRIVER, jDriver.text, project)
-        ProperUtil.savePath(StrConstant.CONN_USERNAME, jUsername.text, project)
-        ProperUtil.savePath(StrConstant.CONN_PASSWORD, jPassword.text, project)
+        ProperUtil.savePath(StrConstant.CONN_URL, jUrl.text)
+        ProperUtil.savePath(StrConstant.CONN_DRIVER, jDriver.text)
+        ProperUtil.savePath(StrConstant.CONN_USERNAME, jUsername.text)
+        ProperUtil.savePath(StrConstant.CONN_PASSWORD, jPassword.text)
     }
 
     private fun validateInfo(): ConnectBean? {
@@ -218,9 +218,6 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
         return connectBean
     }
 
-    /**
-     * 递归方法
-     */
     private fun allTables(virtualFile: VirtualFile, tableNames: MutableList<String>): List<String> {
         if (!virtualFile.isDirectory) {
             return tableNames

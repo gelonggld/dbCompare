@@ -1,11 +1,7 @@
 package com.gelonggld.db2bkg.dialogs
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -14,20 +10,22 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposePanel
+import androidx.compose.ui.graphics.Color
 import com.gelonggld.db2bkg.constants.StrConstant
 import com.gelonggld.db2bkg.exceptions.CreateFileException
 import com.gelonggld.db2bkg.model.DBField
 import com.gelonggld.db2bkg.model.DataBox
-import com.gelonggld.db2bkg.model.TableList
+import com.gelonggld.db2bkg.model.TableCreateBeanData
+import com.gelonggld.db2bkg.project
 import com.gelonggld.db2bkg.tail
 import com.gelonggld.db2bkg.utils.DBConvertUtil
 import com.gelonggld.db2bkg.utils.ProperUtil
+import com.gelonggld.db2bkg.utils.TimeUtil
 import com.gelonggld.db2bkg.utils.codeparse.FileDispatch
 import com.gelonggld.db2bkg.utils.db.SqlUtil
 import com.intellij.ide.util.ClassFilter
 import com.intellij.ide.util.TreeClassChooserFactory
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiManager
@@ -38,158 +36,143 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 import java.sql.Connection
-import java.text.SimpleDateFormat
-import java.util.Date
-import kotlin.system.exitProcess
+import java.time.LocalDateTime
 
-class CreateBeanDialog() : JDialog() {
-    private var date: String? = null
-    private var username: String? = null
-    var dbName: String? = null
-    private lateinit var dir: VirtualFile
+class CreateBeanDialog(
+    dbTableNames: List<String>,
+    dbName: String,
+    private var connection: Connection,
+    private var dir: VirtualFile
+) : JDialog() {
+    private var auth: String = System.getProperty("user.name")
+    private var dbName: String? = dbName
+    private var tableItems = dbTableNames.map { TableCreateBeanData(it) }
 
-
-    lateinit var contentPane: JPanel
-    lateinit var content: JPanel
-    lateinit var errorInfo: JLabel
-    private var jfxPanel: JFXPanel
-    private lateinit var tableView: TableView<TableList>
-
-    private lateinit var project: Project
-    private var dbTableNames: List<String>? = null
-    private lateinit var connection: Connection
-    private lateinit var tableLists: List<TableList>
-    private var ySpan = 30
-    private var xSpan = 600
-    private var xSpan1 = 1200
-
-    val beanbase = mutableStateOf(ProperUtil.readPath(StrConstant.BEAN_PATH))
-    val mappterbase = mutableStateOf(ProperUtil.readPath(StrConstant.MAPPER_PARENT_PATH))
-    val servicebase = mutableStateOf(ProperUtil.readPath(StrConstant.SERVICE_PARENT_PATH))
-    val serviceImplbase = mutableStateOf(ProperUtil.readPath(StrConstant.SERVICEIMPL_PARENT_PATH))
-    val jumpFirstLine = mutableStateOf(ProperUtil.readPath(StrConstant.AUTO_PASS_LINE))
-    val genKtFile =  mutableStateOf(ProperUtil.readPath(StrConstant.GEN_KT_FILE))
+    private val beanBase = mutableStateOf(ProperUtil.readPath(StrConstant.BEAN_PATH))
+    private val mapperBase = mutableStateOf(ProperUtil.readPath(StrConstant.MAPPER_PARENT_PATH))
+    private val serviceBase = mutableStateOf(ProperUtil.readPath(StrConstant.SERVICE_PARENT_PATH))
+    private val serviceImplBase = mutableStateOf(ProperUtil.readPath(StrConstant.SERVICEIMPL_PARENT_PATH))
+    private val jumpFirstLine = mutableStateOf(ProperUtil.readPath(StrConstant.AUTO_PASS_LINE))
+    private val genKtFile =  mutableStateOf(ProperUtil.readPath(StrConstant.GEN_KT_FILE))
 
 
-    private val currentDate: String
-        get() {
-            val simpleDateFormat = SimpleDateFormat("yyy/MM/dd")
-            return simpleDateFormat.format(Date())
+
+    private val error = mutableStateOf<String?>(null)
+    @Preview
+    @Composable
+    fun content() {
+        Scaffold(
+            topBar = { topBar() },
+            floatingActionButton = { okButton() }
+        ) {
+            Column (modifier = Modifier.fillMaxSize()){
+                configPanel()
+                tableHead()
+                error.value?.let { Text(color = Color.Red, text = it) }
+                tableItems.forEach { dataRow(it) }
+            }
         }
+    }
+    @Composable
+    private fun topBar() {
+        TopAppBar(
+            title = { Text("创建实例") },
+            navigationIcon = {
+                IconButton(onClick = { dispose() }) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = null
+                    )
+                }
+            }
+        )
+    }
+    @Composable
+    private fun okButton() {
+        FloatingActionButton(onClick = { onOK() }) {
+            Text(text = "确定")
+        }
+    }
+
+    @Composable
+    private fun dataRow(tableCreateBeanData: TableCreateBeanData) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(modifier = Modifier.weight(3F), text = tableCreateBeanData.tableName)
+            itemCheck(tableCreateBeanData.generator)
+            itemCheck(tableCreateBeanData.mapper, tableCreateBeanData.generator)
+            itemCheck(tableCreateBeanData.service, tableCreateBeanData.mapper, tableCreateBeanData.generator)
+        }
+    }
+
+    @Composable
+    private fun RowScope.itemCheck(state: MutableState<Boolean>,vararg linkState : MutableState<Boolean>) =
+        Checkbox(
+            modifier = Modifier.weight(1F),
+            checked = state.value,
+            onCheckedChange = {check ->
+                if(check) {
+                    linkState.forEach { it.value = true }
+                }
+            }
+        )
+
+
+    @Composable
+    private fun configPanel() {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            textPanel("bean继承", beanBase, StrConstant.BEAN_PATH)
+            textPanel("mapper继承", mapperBase, StrConstant.MAPPER_PARENT_PATH)
+            textPanel("service继承", serviceBase, StrConstant.SERVICE_PARENT_PATH)
+            textPanel("serviceImpl继承", serviceImplBase, StrConstant.SERVICEIMPL_PARENT_PATH)
+            checkPanel("跳过第一个下划线", jumpFirstLine, StrConstant.AUTO_PASS_LINE)
+            checkPanel("kotlin", genKtFile, StrConstant.GEN_KT_FILE)
+        }
+    }
+
+
+
+    @Composable
+    private fun tableHead() {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(modifier = Modifier.weight(3F), text = "表名")
+            Text(modifier = Modifier.weight(1F), text = "创建")
+            Text(modifier = Modifier.weight(1F), text = "生成mapper")
+            Text(modifier = Modifier.weight(1F), text = "生成service")
+        }
+    }
 
     init {
         isModal = true
         val composePanel = ComposePanel()
         contentPane.add(composePanel)
-        contentPane.registerKeyboardAction(
-            { dispose() },
-            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
-        )
         defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
         addWindowListener(object : WindowAdapter() {
             override fun windowClosing(e: WindowEvent?) {
                 dispose()
             }
         })
-
-
-        // call onCancel() when cross is clicked
-
-
-        // call onCancel() on ESCAPE
-
-        jfxPanel = JFXPanel()
-        content.add(jfxPanel)
+        composePanel.setContent { content() }
     }
 
 
-    @Preview
-    @Composable
-    fun content() {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("创建实例") },
-                    navigationIcon = {
-                        IconButton(onClick = { dispose() }) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = null
-                            )
-                        }
-                    }
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(onClick = { onOK() }) {
-                    Text(text = "确定")
-                }
-            }
-        ) {
-            Column (modifier = Modifier.fillMaxSize()){
-                Row (modifier = Modifier.fillMaxWidth()){
-                    textPanel("bean继承",beanbase,StrConstant.BEAN_PATH)
-                    textPanel("mapper继承",mappterbase,StrConstant.MAPPER_PARENT_PATH)
-                    textPanel("service继承",servicebase,StrConstant.SERVICE_PARENT_PATH)
-                    textPanel("serviceImpl继承",serviceImplbase,StrConstant.SERVICEIMPL_PARENT_PATH)
-                    checkPanel("跳过第一个下划线",jumpFirstLine,StrConstant.AUTO_PASS_LINE)
-                    checkPanel("kotlin",genKtFile,StrConstant.GEN_KT_FILE)
-                }
-            }
-        }
-    }
-
-
-    constructor (
-        project: Project,
-        dbTableNames: List<String>, dbName: String, connection: Connection, dir: VirtualFile
-    ) : this() {
-        this.project = project
-        this.dbTableNames = dbTableNames
-        this.connection = connection
-        this.dir = dir
-        this.dbName = dbName
-        this.username = System.getProperty("user.name")
-        this.date = currentDate
-        tableLists = dbTableNames.map { TableList.Build(it) }
-        addTable()
-    }
-
-    private fun addTable() {
-        Platform.setImplicitExit(false)
-        Platform.runLater {
-            val root = Group()
-            val scene = Scene(root, javafx.scene.paint.Color.ALICEBLUE)
-            beanInput = allToPanel("bean继承", StrConstant.BEAN_PATH, 0, 0, root)
-            mapperInput = allToPanel("mapper继承", StrConstant.MAPPER_PARENT_PATH, xSpan, 0, root)
-            serviceInput = allToPanel("service继承", StrConstant.SERVICE_PARENT_PATH, xSpan1, 0, root)
-            serviceImplInput = allToPanel("serviceImpl继承", StrConstant.SERVICEIMPL_PARENT_PATH, 0, ySpan, root)
-            jumpFirstLine = addToPanel("跳过第一个下划线", StrConstant.AUTO_PASS_LINE, xSpan, ySpan, root)
-            genKtFile = addToPanel("kotlin", StrConstant.GEN_KT_FILE, xSpan1, ySpan, root)
-            val tableView = createTableView(0, ySpan * 2)
-            root.children.add(tableView)
-            jfxPanel.scene = scene
-        }
-    }
 
     @Composable
-    fun RowScope.textPanel(label: String,state: MutableState<String>,key:String) {
+    fun textPanel(label: String,state: MutableState<String>,key:String) {
         Text(state.value)
-        Button(onClick = {selectFilePath(project, state, key)}) {
+        Button(onClick = {selectFilePath(state, key)}) {
             Text(label)
         }
     }
 
     @Composable
-    fun RowScope.checkPanel(label: String,state: MutableState<String>,key: String) {
+    fun checkPanel(label: String,state: MutableState<String>,key: String) {
         Text(label)
         Checkbox(state.value == "1",onCheckedChange = {ProperUtil.savePath(key,state.value)})
     }
 
 
 
-    private fun selectFilePath(project: Project, state: MutableState<String>, key: String) {
+    private fun selectFilePath( state: MutableState<String>, key: String) {
         SwingUtilities.invokeLater {
             val chooser = TreeClassChooserFactory.getInstance(project)
                 .createNoInnerClassesScopeChooser(
@@ -206,69 +189,29 @@ class CreateBeanDialog() : JDialog() {
     }
 
 
-    private fun allToPanel(labelName: String, propName: String, x: Int, y: Int, root: Group): TextField {
-        val label = Label(labelName)
-        val textField = TextField()
-        textField.text = ProperUtil.readPath(propName, project)
-        val button = Button("选取class")
-        button.setOnAction { selectFilePath(project, textField, propName) }
-        val hb = HBox()
-        hb.children.addAll(label, textField, button)
-        hb.spacing = 10.0
-        hb.layoutX = x.toDouble()
-        hb.layoutY = y.toDouble()
-        root.children.add(hb)
-        return textField
-    }
-
-
-    private fun addToPanel(labelName: String, propName: String, x: Int, y: Int, root: Group): CheckBox {
-        val checkBox = CheckBox(labelName)
-        checkBox.isSelected = ProperUtil.readPath(propName, project) == "Y"
-        checkBox.layoutX = x.toDouble()
-        checkBox.layoutY = y.toDouble()
-        checkBox.selectedProperty().addListener { _, _, newValue ->
-            val c = if (newValue) "Y" else "N"
-            ProperUtil.savePath(propName, c, project)
-        }
-        root.children.add(checkBox)
-        return checkBox
-    }
-
-
-    @Suppress("SameParameterValue")
-    private fun createTableView(x: Int, y: Int): TableView<*> {
-        tableView = TableView()
-        tableView.layoutX = x.toDouble()
-        tableView.layoutY = y.toDouble()
-        tableView.minWidth = 1580.0
-        createTableTitle(tableView)
-        return tableView
-    }
-
     private fun onOK() {
         // add your code here
         createBean(
-            tableLists.filter { it.getGenerator().isSelected },
-            ProperUtil.readPath(StrConstant.AUTO_PASS_LINE, project) == "Y"
+            tableItems.filter { it.generator.value },
+            ProperUtil.readPath(StrConstant.AUTO_PASS_LINE) == "Y"
         )
         SqlUtil.recycleConn(connection)
         dispose()
     }
 
-    private fun createBean(collect: List<TableList>, passLine: Boolean) {
+    private fun createBean(collect: List<TableCreateBeanData>, passLine: Boolean) {
         WriteCommandAction.writeCommandAction(project).run<Throwable> {
             for (tableList in collect) {
-                val dbFields = SqlUtil.getDBFields(tableList.getTableName(), connection, dbName!!)
-                val beanName = DBConvertUtil.dBTableName2Bean(tableList.getTableName(), passLine)
+                val dbFields = SqlUtil.getDBFields(tableList.tableName, connection, dbName!!)
+                val beanName = DBConvertUtil.dBTableName2Bean(tableList.tableName, passLine)
                 try {
                     val beanClass =
-                        createBeanClass(beanName, dbFields, tableList.getTableName(), "import ${beanInput.text}")
-                    if (tableList.getMapper().isSelected) {
-                        val mapperClass = createMaperClass(beanClass, mapperInput.text)
+                        createBeanClass(beanName, dbFields, tableList.tableName, "import ${beanBase.value}")
+                    if (tableList.mapper.value) {
+                        val mapperClass = createMaperClass(beanClass, mapperBase.value)
                         createMapperXml(mapperClass.qualifiedName, beanClass.name)
-                        if (tableList.getService().isSelected) {
-                            val dataBox = bindService(beanClass, serviceInput.text)
+                        if (tableList.service.value) {
+                            val dataBox = bindService(beanClass, serviceBase.value)
                             val serviceDir = findCreateDir(dir, "service")
                             val serviceVFile = serviceDir.createChildData(
                                 null,
@@ -279,7 +222,7 @@ class CreateBeanDialog() : JDialog() {
                                 ?: throw CreateFileException("在创建${beanClass.name!!}Service.${FileDispatch.tail()} 时发生异常")
                             createServiceImplClass(
                                 beanClass,
-                                serviceImplInput.text,
+                                serviceImplBase.value,
                                 serviceClass,
                                 serviceDir,
                                 mapperClass
@@ -287,46 +230,15 @@ class CreateBeanDialog() : JDialog() {
                         }
                     }
                 } catch (e: IOException) {
-                    errorL(e.message)
+                    errorL(e.message?:return@run)
                 }
 
             }
         }
-//        object : WriteCommandAction.Simple<Any>(project, PsiManager.getInstance(project).findFile(dir)) {
-//            @Throws(Throwable::class)
-//            override fun run() {
-//                for (tableList in collect) {
-//                    val dbFields = SqlUtil.getDBFields(tableList.getTableName(), connection, dbName!!)
-//                    val beanName = DBConvertUtil.dBTableName2Bean(tableList.getTableName(), passLine)
-//                    try {
-//                        val beanClass = createBeanClass(beanName, dbFields, tableList.getTableName(),"import ${beanInput.text}")
-//                        if (tableList.getMapper().isSelected) {
-//                            val mapperClass = createMaperClass(beanClass, mapperInput.text)
-//                            createMapperXml(mapperClass.qualifiedName, beanClass.name)
-//                            if (tableList.getService().isSelected) {
-//                                val dataBox = bindService(beanClass, serviceInput.text)
-//                                val serviceDir = findCreateDir(dir, "service")
-//                                val serviceVFile = serviceDir.createChildData(null, "${beanClass.name!!}Service.${FileDispatch.tail()}")
-//                                writeFileFromTemplet(serviceVFile, "${FileDispatch.pre()}/interface.mvpd", dataBox)
-//                                val serviceClass = FileDispatch.findClass(serviceVFile) ?: throw CreateFileException("在创建${beanClass.name!!}Service.${FileDispatch.tail()} 时发生异常")
-//                                createServiceImplClass(beanClass, serviceImplInput.text, serviceClass, serviceDir, mapperClass)
-//                            }
-//                        }
-//                    } catch (e: IOException) {
-//                        errorL(e.message)
-//                        return
-//                    }
-//
-//                }
-//            }
-//        }.execute()
     }
 
-
-    private fun errorL(message: String?) {
-        message?.let {
-            errorInfo.text = message
-        }
+    private fun errorL(message: String) {
+        error.value = message
     }
 
 
@@ -459,8 +371,8 @@ class CreateBeanDialog() : JDialog() {
     ) {
         dataBox.basePath = basePath
         dataBox.beanPath = beanClass.qualifiedName
-        dataBox.auth = username
-        dataBox.createTime = date
+        dataBox.auth = auth
+        dataBox.createTime = LocalDateTime.now().format(TimeUtil.y_s_normal)
         dataBox.className = "${beanClass.name!!}Service"
         dataBox.baseName = nameFromPath(basePath)
         dataBox.beanName = beanClass.name
@@ -472,8 +384,8 @@ class CreateBeanDialog() : JDialog() {
         dataBox.basePath = basePath
         dataBox.interfacePath = serviceClass.qualifiedName
         dataBox.beanPath = beanClass.qualifiedName
-        dataBox.auth = username
-        dataBox.createTime = date
+        dataBox.auth = auth
+        dataBox.createTime = LocalDateTime.now().format(TimeUtil.y_s_normal)
         dataBox.className = "${beanClass.name!!}ServiceImpl"
         dataBox.baseName = nameFromPath(basePath)
         dataBox.beanName = nameFromPath(beanClass.name!!)
@@ -493,8 +405,8 @@ class CreateBeanDialog() : JDialog() {
     private fun buildBean(modelDir: VirtualFile, beanName: String, importBaseModel: String): DataBox {
         val dataBox = DataBox()
         dataBox.packageInfo = getPackName(modelDir)
-        dataBox.auth = username
-        dataBox.createTime = date
+        dataBox.auth = auth
+        dataBox.createTime = LocalDateTime.now().format(TimeUtil.y_s_normal)
         dataBox.className = beanName
         dataBox.importBaseModel = importBaseModel
         dataBox.baseModel = importBaseModel.tail()
@@ -534,42 +446,4 @@ class CreateBeanDialog() : JDialog() {
         return childDir
     }
 
-    private fun onCancel() {
-        // add your code here if necessary
-        dispose()
-    }
-
-    private fun createTableTitle(tableView: TableView<TableList>) {
-        val tableName = createTableColumn("表名", 500, PropertyValueFactory("tableName"))
-        val button = createTableColumn("创建", 150, PropertyValueFactory("generator"))
-        val mapper = createTableColumn("生成mapper", 150, PropertyValueFactory("mapper"))
-        val service = createTableColumn("生成service", 150, PropertyValueFactory("service"))
-        tableView.columns.addAll(tableName, button, mapper, service)
-        val observableList = FXCollections.observableList(tableLists)
-        tableView.items = observableList
-    }
-
-
-    private fun createTableColumn(
-        columnName: String,
-        minWidth: Int,
-        mName: PropertyValueFactory<TableList, Any>
-    ): TableColumn<TableList, Any> {
-        val mField = TableColumn<TableList, Any>(columnName)
-        mField.minWidth = minWidth.toDouble()
-        mField.cellValueFactory = mName
-        return mField
-    }
-
-    companion object {
-
-
-        @JvmStatic
-        fun main(args: Array<String>) {
-            val dialog = CreateBeanDialog()
-            dialog.pack()
-            dialog.isVisible = true
-            exitProcess(0)
-        }
-    }
 }
