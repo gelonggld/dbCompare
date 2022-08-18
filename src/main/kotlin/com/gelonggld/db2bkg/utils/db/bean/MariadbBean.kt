@@ -96,9 +96,9 @@ class MariadbBean : SqlBean {
     override fun createTable(tableCreates: List<TableCreate>, priTableCreate: TableCreate, tableName: String, conn: Connection) {
         val sb = StringBuffer()
         for (tableCreate in tableCreates) {
-            appendColumnSql(sb, tableCreate, tableCreate.isPri())
+            appendColumnSql(sb, tableCreate, tableCreate.isPri.value)
         }
-        sb.append(Mariadb.SPIT).append(Mariadb.CREATE_TABLE_PRI.replace(Mariadb.NAME, priTableCreate.getDbFieldName()!!))
+        sb.append(Mariadb.SPIT).append(Mariadb.CREATE_TABLE_PRI.replace(Mariadb.NAME, priTableCreate.dbFieldName.value))
         val createSql = Mariadb.CREATE_TABLE.replace(Mariadb.TABLE_NAME, tableName).replace(Mariadb.COLUMN_CONTENT, sb.toString())
         var sp: Savepoint? = null
         try {
@@ -121,27 +121,27 @@ class MariadbBean : SqlBean {
 
 
     private fun appendColumnSql(sb: StringBuffer, tableCreate: TableCreate, pri: Boolean) {
-        val ifNull = if (tableCreate.getCanNull()!!.isSelected) Mariadb.NULL else Mariadb.NOT_NULL
+        val ifNull = if (tableCreate.canNull.value) Mariadb.NULL else Mariadb.NOT_NULL
         var auto = ""
-        if (tableCreate.getAutoIncrement() != null && tableCreate.getAutoIncrement()!!.isSelected) {
+        if (tableCreate.autoIncrement.value) {
             auto = Mariadb.AUTO_INCREMENT_STR
         }
-        var defaultStr = Mariadb.DEFAULT_STR.replace(Mariadb.DEFAULT, tableCreate.getDefaultValue()!!.text)
-        if (pri || !tableCreate.getCanNull()!!.isSelected ) {
+        var defaultStr = Mariadb.DEFAULT_STR.replace(Mariadb.DEFAULT, tableCreate.defaultValue.value)
+        if (pri || !tableCreate.canNull.value) {
             defaultStr = ""
         }
-        var typeLength = Mariadb.LEFT_BRACKET + tableCreate.getFieldRang()!!.text + Mariadb.RIGHT_BRACKET
-        if (tableCreate.getDbFieldType() == Mariadb.DATE_STR) {
+        var typeLength = Mariadb.LEFT_BRACKET + tableCreate.fieldRang.value.toString() + Mariadb.RIGHT_BRACKET
+        if (tableCreate.dbFieldType.value== Mariadb.DATE_STR) {
             typeLength = ""
         }
         val sqlColumn = Mariadb.CREATE_TABLE_COLUMN
-                .replace(Mariadb.NAME, tableCreate.getDbFieldName()!!)
-                .replace(Mariadb.TYPE, tableCreate.getDbFieldType()!!)
+                .replace(Mariadb.NAME, tableCreate.dbFieldName.value)
+                .replace(Mariadb.TYPE, tableCreate.dbFieldType.value)
                 .replace(Mariadb.TYPE_LENGTH, typeLength)
                 .replace(Mariadb.IF_NULL, ifNull)
                 .replace(Mariadb.AUTO_INCREMENT, auto)
                 .replace(Mariadb.DEFAULT, defaultStr)
-                .replace(Mariadb.COMMENT, tableCreate.getFieldComment()!!)
+                .replace(Mariadb.COMMENT, tableCreate.fieldComment.value!!)
         if (sb.isNotEmpty()) {
             sb.append(",").append(sqlColumn)
         } else {
@@ -156,23 +156,23 @@ class MariadbBean : SqlBean {
             connection.autoCommit = false
             savepoint = connection.setSavepoint()
             for (tableData in deleteFromDBs) {
-                connection.prepareStatement(String.format(Mariadb.DROP_FIELD, dbTable, tableData.getdName())).execute()
+                connection.prepareStatement(String.format(Mariadb.DROP_FIELD, dbTable, tableData.dName.value)).execute()
             }
             for (tableData in addToDBs) {
-                val ifNull = if (tableData.getCanNone()!!.isSelected) Mariadb.NULL else Mariadb.NOT_NULL
-                var typeLength = Mariadb.LEFT_BRACKET + tableData.getFieldRang()!!.text + Mariadb.RIGHT_BRACKET
-                if (tableData.getmType() == "java.util.Date") {
+                val ifNull = if (tableData.canNone.value) Mariadb.NULL else Mariadb.NOT_NULL
+                var typeLength = Mariadb.LEFT_BRACKET + tableData.fieldRang.toString() + Mariadb.RIGHT_BRACKET
+                if (tableData.mType.value == "java.util.Date") {
                     typeLength = ""
                 }
-                val default = if(tableData.getCanNone()!!.isSelected) "DEFAULT ${tableData.getDefaultValue()!!.text}" else ""
-                val sql = String.format(Mariadb.ADD_FIELD, dbTable, DBConvertUtil.beanField2DB(tableData.getmName()!!),
-                        DBConvertUtil.getBean2DBMapType(tableData.getmType(),kt),
-                        typeLength, ifNull, default, DBConvertUtil.converEmptyComment(tableData.getmNote()))
+                val default = if(tableData.canNone.value) "DEFAULT ${tableData.defaultValue.value}" else ""
+                val sql = String.format(Mariadb.ADD_FIELD, dbTable, DBConvertUtil.beanField2DB(tableData.mName.value!!),
+                        DBConvertUtil.getBean2DBMapType(tableData.mType.value,kt),
+                        typeLength, ifNull, default, DBConvertUtil.converEmptyComment(tableData.mNote.value))
                 connection.prepareStatement(sql).execute()
             }
             for (tableData in addCommitToDBs) {
-                val sql = String.format(Mariadb.ADD_COMMENT, dbTable, tableData.getdName(), tableData.getdType(), tableData.dataNum,
-                        DBConvertUtil.converEmptyComment(tableData.getmNote()))
+                val sql = String.format(Mariadb.ADD_COMMENT, dbTable, tableData.dName.value, tableData.dType.value, tableData.dataNum,
+                        DBConvertUtil.converEmptyComment(tableData.mNote.value))
                 connection.prepareStatement(sql).execute()
             }
             connection.commit()

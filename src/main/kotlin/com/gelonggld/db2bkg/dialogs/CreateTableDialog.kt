@@ -19,7 +19,7 @@ import java.awt.event.*
 import java.sql.Connection
 
 class CreateTableDialog(
-    val conn: Connection,
+    private val conn: Connection,
     val tableName: String,
     selectFile: VirtualFile
 ) : JDialog() {

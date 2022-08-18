@@ -123,7 +123,7 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
 
 
     private fun showCreateTableDialog(connection: Connection, tableName: String) {
-        val createTableDialog = CreateTableDialog(connection, virtualFile, tableName)
+        val createTableDialog = CreateTableDialog(connection, tableName, virtualFile )
         createTableDialog.pack()
         createTableDialog.isVisible = true
     }

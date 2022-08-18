@@ -42,11 +42,4 @@ class DataBox {
 
     }
 
-
-    fun ifNoNullReplace(key: String, value: String?, baseStr: String): String {
-        return if (value != null) {
-            baseStr.replace(key, value)
-        } else baseStr
-    }
-
 }

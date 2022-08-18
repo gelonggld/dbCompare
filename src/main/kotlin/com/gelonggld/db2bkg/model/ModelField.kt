@@ -1,7 +1,5 @@
 package com.gelonggld.db2bkg.model
 
-import com.intellij.psi.PsiField
-
 /**
  * Created by gelon on 2017/9/29.
  */
