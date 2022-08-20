@@ -2,6 +2,7 @@ package com.gelonggld.db2bkg.utils.codeparse
 
 import com.gelonggld.db2bkg.constants.StrConstant
 import com.gelonggld.db2bkg.model.ModelField
+import com.gelonggld.db2bkg.project
 import com.gelonggld.db2bkg.removeBase
 import com.gelonggld.db2bkg.tail
 import com.gelonggld.db2bkg.utils.DBConvertUtil
@@ -21,13 +22,13 @@ import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.findPropertyByName
 import org.jetbrains.kotlin.resolve.ImportPath
 
-class KtWorker(val project: Project) {
+class KtWorker() {
 
     companion object {
         val logger = Logger.getInstance(KtWorker::class.java)
     }
 
-    fun ktF() = KtPsiFactory(FileDispatch.project, false)
+    fun ktF() = KtPsiFactory(project, false)
 
 
     fun addAnno2Class(annoStr: String, psiClass: KtLightClass, vararg import: String) {

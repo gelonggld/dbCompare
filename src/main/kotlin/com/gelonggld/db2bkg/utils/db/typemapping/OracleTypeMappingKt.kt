@@ -42,7 +42,7 @@ object OracleTypeMappingKt {
     }
 
 
-    fun putBeanMapDBKt(onlyValue: String, vararg values: String) {
+    private fun putBeanMapDBKt(onlyValue: String, vararg values: String) {
         bean2DBMapKt!![onlyValue] = values[0]
         for (value in values) {
             db2BeanMapKt!![value] = onlyValue
@@ -50,7 +50,7 @@ object OracleTypeMappingKt {
     }
 
 
-    fun putDBMapBeanKt(onlyValue: String, vararg values: String) {
+    private fun putDBMapBeanKt(onlyValue: String, vararg values: String) {
         db2BeanMapKt!![onlyValue] = values[0]
         for (value in values) {
             bean2DBMapKt!![value] = onlyValue

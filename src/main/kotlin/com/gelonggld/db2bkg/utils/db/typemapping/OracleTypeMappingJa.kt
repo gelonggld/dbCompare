@@ -37,7 +37,7 @@ object OracleTypeMappingJa {
         return bean2DBMapJa!![beanType] ?: throw TypeMapException("错误的bean类型--$beanType")
     }
 
-    fun putBeanMapDBJa(onlyValue: String, vararg values: String) {
+    private fun putBeanMapDBJa(onlyValue: String, vararg values: String) {
         bean2DBMapJa!![onlyValue] = values[0]
         for (value in values) {
             db2BeanMapJa!![value] = onlyValue
@@ -45,7 +45,7 @@ object OracleTypeMappingJa {
     }
 
 
-    fun putDBMapBeanJa(onlyValue: String, vararg values: String) {
+    private fun putDBMapBeanJa(onlyValue: String, vararg values: String) {
         db2BeanMapJa!![onlyValue] = values[0]
         for (value in values) {
             bean2DBMapJa!![value] = onlyValue

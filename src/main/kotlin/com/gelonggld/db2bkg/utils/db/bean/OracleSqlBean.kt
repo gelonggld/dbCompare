@@ -82,9 +82,9 @@ class OracleSqlBean : SqlBean {
     override fun createTable(tableCreates: List<TableCreate>, priTableCreate: TableCreate, tableName: String,conn: Connection) {
         val sb = StringBuffer()
         for (tableCreate in tableCreates) {
-            appendColumnSql(sb, tableCreate, tableCreate.isPri())
+            appendColumnSql(sb, tableCreate, tableCreate.isPri.value)
         }
-        sb.append(Oracle.SPIT).append(Oracle.CREATE_TABLE_PRI.replace(Oracle.NAME, priTableCreate.getDbFieldName()!!))
+        sb.append(Oracle.SPIT).append(Oracle.CREATE_TABLE_PRI.replace(Oracle.NAME, priTableCreate.dbFieldName.value))
         val createSql = Oracle.CREATE_TABLE.replace(Oracle.TABLE_NAME, tableName).replace(Oracle.COLUMN_CONTENT, sb.toString())
         var sp: Savepoint? = null
         try {
@@ -92,7 +92,7 @@ class OracleSqlBean : SqlBean {
             sp = conn.setSavepoint("a")
             conn.prepareStatement(createSql).execute()
             for (tableCreate in tableCreates) {
-                comment(tableCreate.getDbFieldName()!!, tableCreate.getFieldComment()!!, conn, tableName)
+                comment(tableCreate.dbFieldName.value, tableCreate.fieldComment.value!!, conn, tableName)
             }
             conn.commit()
         } catch (e: SQLException) {
@@ -117,23 +117,23 @@ class OracleSqlBean : SqlBean {
 
 
     private fun appendColumnSql(sb: StringBuffer, tableCreate: TableCreate, pri: Boolean) {
-        val ifNull = if (tableCreate.getCanNull()!!.isSelected) Oracle.NULL else Oracle.NOT_NULL
+        val ifNull = if (tableCreate.canNull.value) Oracle.NULL else Oracle.NOT_NULL
 
-        var defaultStr = Oracle.DEFAULT_STR.replace(Oracle.DEFAULT, tableCreate.getDefaultValue()!!.text)
+        var defaultStr = Oracle.DEFAULT_STR.replace(Oracle.DEFAULT, tableCreate.defaultValue.value)
         if (pri) {
             defaultStr = ""
         }
-        var typeLength = Oracle.LEFT_BRACKET + tableCreate.getFieldRang()!!.text + Oracle.RIGHT_BRACKET
-        if (tableCreate.getDbFieldType()!! == Oracle.DATE_STR) {
+        var typeLength = Oracle.LEFT_BRACKET + tableCreate.fieldRang.value + Oracle.RIGHT_BRACKET
+        if (tableCreate.dbFieldType.value == Oracle.DATE_STR) {
             typeLength = ""
         }
         val sqlColumn = Oracle.CREATE_TABLE_COLUMN
-                .replace(Oracle.NAME, tableCreate.getDbFieldName()!!)
-                .replace(Oracle.TYPE, tableCreate.getDbFieldType()!!)
+                .replace(Oracle.NAME, tableCreate.dbFieldName.value)
+                .replace(Oracle.TYPE, tableCreate.dbFieldType.value)
                 .replace(Oracle.TYPE_LENGTH, typeLength)
                 .replace(Oracle.IF_NULL, ifNull)
                 .replace(Oracle.DEFAULT, defaultStr)
-        if (sb.length != 0) {
+        if (sb.isNotEmpty()) {
             sb.append(",").append(sqlColumn)
         } else {
             sb.append(sqlColumn)
@@ -141,7 +141,7 @@ class OracleSqlBean : SqlBean {
     }
 
 
-    fun processNullable(info: String, dbField: DBField) {
+    private fun processNullable(info: String, dbField: DBField) {
         dbField.notNull = info == "N"
     }
 
@@ -152,26 +152,26 @@ class OracleSqlBean : SqlBean {
             connection.autoCommit = false
             savepoint = connection.setSavepoint("b")
             for (tableData in deleteFromDBs) {
-                connection.prepareStatement(String.format(Oracle.DROP_FIELD, dbTable, tableData.getdName())).execute()
+                connection.prepareStatement(String.format(Oracle.DROP_FIELD, dbTable, tableData.dName.value)).execute()
             }
             for (tableData in addToDBs) {
-                val ifNull = if (tableData.getCanNone()!!.isSelected) Oracle.NULL else Oracle.NOT_NULL
-                var typeLength = Oracle.LEFT_BRACKET + tableData.getFieldRang()!!.text + Oracle.RIGHT_BRACKET
-                if (tableData.getmType() == "java.util.Date") {
+                val ifNull = if (tableData.canNone.value) Oracle.NULL else Oracle.NOT_NULL
+                var typeLength = Oracle.LEFT_BRACKET + tableData.fieldRang.value + Oracle.RIGHT_BRACKET
+                if (tableData.mType.value == "java.util.Date") {
                     typeLength = ""
                 }
-                val default = if(tableData.getCanNone()!!.isSelected) "DEFAULT ${tableData.getDefaultValue()!!.text}" else ""
-                val sql = String.format(Oracle.ADD_FIELD, dbTable, DBConvertUtil.beanField2DB(tableData.getmName()!!),
-                        DBConvertUtil.getBean2DBMapType(tableData.getmType(),kt),
+                val default = if(tableData.canNone.value) "DEFAULT ${tableData.defaultValue.value}" else ""
+                val sql = String.format(Oracle.ADD_FIELD, dbTable, DBConvertUtil.beanField2DB(tableData.mName.value!!),
+                        DBConvertUtil.getBean2DBMapType(tableData.mType.value,kt),
                         typeLength, default, ifNull)
                 connection.prepareStatement(sql).execute()
 
-                comment(DBConvertUtil.beanField2DB(tableData.getmName()!!), DBConvertUtil.converEmptyComment(tableData.getmNote()), connection, dbTable)
+                comment(DBConvertUtil.beanField2DB(tableData.mName.value!!), DBConvertUtil.converEmptyComment(tableData.mNote.value), connection, dbTable)
 
             }
             for (tableData in addCommitToDBs) {
-                val sql = String.format(Oracle.ADD_COMMENT, dbTable, tableData.getdName(), tableData.getdType(),
-                        DBConvertUtil.converEmptyComment(tableData.getmNote()))
+                val sql = String.format(Oracle.ADD_COMMENT, dbTable, tableData.dName.value, tableData.dType.value,
+                        DBConvertUtil.converEmptyComment(tableData.mNote.value))
                 connection.prepareStatement(sql).execute()
             }
             connection.commit()
@@ -191,18 +191,18 @@ class OracleSqlBean : SqlBean {
 
 
     override fun getDb2BeanMapGet(dbType: String,kt:Boolean): String {
-        if(kt){
-            return OracleTypeMappingKt.getDb2BeanMapGet(dbType)
+        return if(kt){
+            OracleTypeMappingKt.getDb2BeanMapGet(dbType)
         }else{
-            return OracleTypeMappingJa.getDb2BeanMapGet(dbType)
+            OracleTypeMappingJa.getDb2BeanMapGet(dbType)
         }
     }
 
     override fun getBean2DBMapGet(beanType: String,kt:Boolean): String {
-        if(kt){
-            return OracleTypeMappingKt.getBean2DBMapGet(beanType)
+        return if(kt){
+            OracleTypeMappingKt.getBean2DBMapGet(beanType)
         }else {
-            return OracleTypeMappingJa.getBean2DBMapGet(beanType)
+            OracleTypeMappingJa.getBean2DBMapGet(beanType)
         }
     }
 

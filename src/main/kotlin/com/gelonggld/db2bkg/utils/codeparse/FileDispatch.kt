@@ -14,14 +14,12 @@ import org.jetbrains.kotlin.asJava.elements.KtLightField
 
 object FileDispatch {
 
-    lateinit var project: Project
     lateinit var ktWorker: KtWorker
     lateinit var jaWorker: JaWorker
 
-    fun assemb(project: Project) {
-        this.project = project
-        ktWorker = KtWorker(project)
-        jaWorker = JaWorker(project)
+    fun assemb() {
+        ktWorker = KtWorker()
+        jaWorker = JaWorker()
     }
 
 
@@ -37,7 +35,7 @@ object FileDispatch {
 
     fun findClass(virtualFile: VirtualFile): PsiClass? {
 
-        val psiFile = virtualFile.psi(project)
+        val psiFile = virtualFile.psi()
         if (psiFile is PsiClassOwner) {
             if (psiFile.classes.isEmpty()) {
                 return null

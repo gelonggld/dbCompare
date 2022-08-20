@@ -21,6 +21,7 @@ import com.gelonggld.db2bkg.tail
 import com.gelonggld.db2bkg.utils.DBConvertUtil
 import com.gelonggld.db2bkg.utils.ProperUtil
 import com.gelonggld.db2bkg.utils.TimeUtil
+import com.gelonggld.db2bkg.utils.ViewComponent.topBar
 import com.gelonggld.db2bkg.utils.codeparse.FileDispatch
 import com.gelonggld.db2bkg.utils.db.SqlUtil
 import com.intellij.ide.util.ClassFilter
@@ -58,11 +59,10 @@ class CreateBeanDialog(
 
 
     private val error = mutableStateOf<String?>(null)
-    @Preview
     @Composable
     fun content() {
         Scaffold(
-            topBar = { topBar() },
+            topBar = { topBar("创建对象") },
             floatingActionButton = { okButton() }
         ) {
             Column (modifier = Modifier.fillMaxSize()){
@@ -72,20 +72,6 @@ class CreateBeanDialog(
                 tableItems.forEach { dataRow(it) }
             }
         }
-    }
-    @Composable
-    private fun topBar() {
-        TopAppBar(
-            title = { Text("创建实例") },
-            navigationIcon = {
-                IconButton(onClick = { dispose() }) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = null
-                    )
-                }
-            }
-        )
     }
     @Composable
     private fun okButton() {

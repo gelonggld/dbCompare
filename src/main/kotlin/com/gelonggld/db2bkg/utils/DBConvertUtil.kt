@@ -35,7 +35,7 @@ object DBConvertUtil {
         val sb = StringBuffer()
         var nextUp = false
         for (c in name.toCharArray()) {
-            if (sb.length == 0) {
+            if (sb.isEmpty()) {
                 sb.append(Character.toUpperCase(c))
             } else if (c == '_') {
                 nextUp = true
@@ -69,7 +69,7 @@ object DBConvertUtil {
 
 
     fun getDB2BeanMapType(dbType: String, kt: Boolean): String {
-        return SqlUtil.getDb2BeanMapGet(dbType.toUpperCase(), kt)
+        return SqlUtil.getDb2BeanMapGet(dbType.uppercase(), kt)
     }
 
     fun getBean2DBMapType(beanType: String?, kt: Boolean) = SqlUtil.getBean2DBMapGet(converBaseType(beanType!!, kt), kt)
@@ -79,15 +79,15 @@ object DBConvertUtil {
         if(kt){
             convertbeanType = convertbeanType.convertInt()
         }
-        return SqlUtil.getDb2BeanMapGet(dbType.toUpperCase(), kt) == convertbeanType || SqlUtil.getBean2DBMapGet(convertbeanType, kt) == dbType
+        return SqlUtil.getDb2BeanMapGet(dbType.uppercase(), kt) == convertbeanType || SqlUtil.getBean2DBMapGet(convertbeanType, kt) == dbType
     }
 
     private fun converBaseType(beanType: String, kt: Boolean): String {
         if (true == TypeConstanJa.getTypeMap()?.inverse()?.containsKey(beanType)) {
-            if (kt) {
-                return TypeConstanJa.getTypeMap()!!.inverse()[beanType]?.convertInt() ?: throw TypeCastException("没有找到基本类型$beanType")
+            return if (kt) {
+                TypeConstanJa.getTypeMap()!!.inverse()[beanType]?.convertInt() ?: throw TypeCastException("没有找到基本类型$beanType")
             } else {
-                return TypeConstanJa.getTypeMap()!!.inverse()[beanType] ?: throw TypeCastException("没有找到基本类型$beanType")
+                TypeConstanJa.getTypeMap()!!.inverse()[beanType] ?: throw TypeCastException("没有找到基本类型$beanType")
             }
         }
         return beanType

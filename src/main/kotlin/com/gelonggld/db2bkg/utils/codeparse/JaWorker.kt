@@ -2,6 +2,7 @@ package com.gelonggld.db2bkg.utils.codeparse
 
 import com.gelonggld.db2bkg.constants.StrConstant
 import com.gelonggld.db2bkg.model.ModelField
+import com.gelonggld.db2bkg.project
 import com.gelonggld.db2bkg.tail
 import com.gelonggld.db2bkg.utils.DBConvertUtil
 import com.gelonggld.db2bkg.utils.DBConvertUtil.firstBig
@@ -13,7 +14,7 @@ import com.intellij.psi.codeStyle.CodeStyleManager
 import org.intellij.lang.annotations.Language
 
 
-class JaWorker(val project: Project) {
+class JaWorker() {
     fun addAnno2Class(annoStr: String, psiClass: PsiClass, vararg import: String) {
         psiClass.modifierList!!.addAnnotation(annoStr)
     }

@@ -1,13 +1,9 @@
 package com.gelonggld.db2bkg
 
-import com.gelonggld.db2bkg.utils.codeparse.FileDispatch
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 
-class exts
-
-fun VirtualFile.psi(project: Project) = PsiManager.getInstance(FileDispatch.project).findFile(this)
+fun VirtualFile.psi() = PsiManager.getInstance(project).findFile(this)
 
 fun String.tail() :String{
     if(this.contains('.')){

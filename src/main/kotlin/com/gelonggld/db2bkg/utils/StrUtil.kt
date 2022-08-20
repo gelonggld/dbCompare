@@ -9,9 +9,4 @@ object StrUtil {
         return text == null || text == ""
     }
 
-
-    fun covNull(str: String?): String {
-        return str ?: ""
-    }
-
 }

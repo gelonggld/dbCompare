@@ -96,9 +96,9 @@ class MysqlBean : SqlBean {
     override fun createTable(tableCreates: List<TableCreate>, priTableCreate: TableCreate, tableName: String, conn: Connection) {
         val sb = StringBuffer()
         for (tableCreate in tableCreates) {
-            appendColumnSql(sb, tableCreate, tableCreate.isPri())
+            appendColumnSql(sb, tableCreate, tableCreate.isPri.value)
         }
-        sb.append(Mysql.SPIT).append(Mysql.CREATE_TABLE_PRI.replace(Mysql.NAME, priTableCreate.getDbFieldName()!!))
+        sb.append(Mysql.SPIT).append(Mysql.CREATE_TABLE_PRI.replace(Mysql.NAME, priTableCreate.dbFieldName.value))
         val createSql = Mysql.CREATE_TABLE.replace(Mysql.TABLE_NAME, tableName).replace(Mysql.COLUMN_CONTENT, sb.toString())
         var sp: Savepoint? = null
         try {
@@ -121,27 +121,27 @@ class MysqlBean : SqlBean {
 
 
     private fun appendColumnSql(sb: StringBuffer, tableCreate: TableCreate, pri: Boolean) {
-        val ifNull = if (tableCreate.getCanNull()!!.isSelected) Mysql.NULL else Mysql.NOT_NULL
+        val ifNull = if (tableCreate.canNull.value) Mysql.NULL else Mysql.NOT_NULL
         var auto = ""
-        if (tableCreate.getAutoIncrement() != null && tableCreate.getAutoIncrement()!!.isSelected) {
+        if (tableCreate.autoIncrement.value) {
             auto = Mysql.AUTO_INCREMENT_STR
         }
-        var defaultStr = Mysql.DEFAULT_STR.replace(Mysql.DEFAULT, tableCreate.getDefaultValue()!!.text)
-        if (pri || !tableCreate.getCanNull()!!.isSelected ) {
+        var defaultStr = Mysql.DEFAULT_STR.replace(Mysql.DEFAULT, tableCreate.defaultValue.value)
+        if (pri || !tableCreate.canNull.value ) {
             defaultStr = ""
         }
-        var typeLength = Mysql.LEFT_BRACKET + tableCreate.getFieldRang()!!.text + Mysql.RIGHT_BRACKET
-        if (tableCreate.getDbFieldType() == Mysql.DATE_STR) {
+        var typeLength = Mysql.LEFT_BRACKET + tableCreate.fieldRang.value + Mysql.RIGHT_BRACKET
+        if (tableCreate.dbFieldType.value == Mysql.DATE_STR) {
             typeLength = ""
         }
         val sqlColumn = Mysql.CREATE_TABLE_COLUMN
-                .replace(Mysql.NAME, tableCreate.getDbFieldName()!!)
-                .replace(Mysql.TYPE, tableCreate.getDbFieldType()!!)
+                .replace(Mysql.NAME, tableCreate.dbFieldName.value)
+                .replace(Mysql.TYPE, tableCreate.dbFieldType.value)
                 .replace(Mysql.TYPE_LENGTH, typeLength)
                 .replace(Mysql.IF_NULL, ifNull)
                 .replace(Mysql.AUTO_INCREMENT, auto)
                 .replace(Mysql.DEFAULT, defaultStr)
-                .replace(Mysql.COMMENT, tableCreate.getFieldComment()!!)
+                .replace(Mysql.COMMENT, tableCreate.fieldComment.value!!)
         if (sb.isNotEmpty()) {
             sb.append(",").append(sqlColumn)
         } else {
@@ -156,23 +156,23 @@ class MysqlBean : SqlBean {
             connection.autoCommit = false
             savepoint = connection.setSavepoint()
             for (tableData in deleteFromDBs) {
-                connection.prepareStatement(String.format(Mysql.DROP_FIELD, dbTable, tableData.getdName())).execute()
+                connection.prepareStatement(String.format(Mysql.DROP_FIELD, dbTable, tableData.dName.value)).execute()
             }
             for (tableData in addToDBs) {
-                val ifNull = if (tableData.getCanNone()!!.isSelected) Mysql.NULL else Mysql.NOT_NULL
-                var typeLength = Mysql.LEFT_BRACKET + tableData.getFieldRang()!!.text + Mysql.RIGHT_BRACKET
-                if (tableData.getmType() == "java.util.Date") {
+                val ifNull = if (tableData.canNone.value) Mysql.NULL else Mysql.NOT_NULL
+                var typeLength = Mysql.LEFT_BRACKET + tableData.fieldRang.value + Mysql.RIGHT_BRACKET
+                if (tableData.mType.value == "java.util.Date") {
                     typeLength = ""
                 }
-                val default = if(tableData.getCanNone()!!.isSelected) "DEFAULT ${tableData.getDefaultValue()!!.text}" else ""
-                val sql = String.format(Mysql.ADD_FIELD, dbTable, DBConvertUtil.beanField2DB(tableData.getmName()!!),
-                        DBConvertUtil.getBean2DBMapType(tableData.getmType(),kt),
-                        typeLength, ifNull, default, DBConvertUtil.converEmptyComment(tableData.getmNote()))
+                val default = if(tableData.canNone.value) "DEFAULT ${tableData.defaultValue.value}" else ""
+                val sql = String.format(Mysql.ADD_FIELD, dbTable, DBConvertUtil.beanField2DB(tableData.mType.value!!),
+                        DBConvertUtil.getBean2DBMapType(tableData.mType.value,kt),
+                        typeLength, ifNull, default, DBConvertUtil.converEmptyComment(tableData.mNote.value))
                 connection.prepareStatement(sql).execute()
             }
             for (tableData in addCommitToDBs) {
-                val sql = String.format(Mysql.ADD_COMMENT, dbTable, tableData.getdName(), tableData.getdType(), tableData.dataNum,
-                        DBConvertUtil.converEmptyComment(tableData.getmNote()))
+                val sql = String.format(Mysql.ADD_COMMENT, dbTable, tableData.dName.value, tableData.dType.value, tableData.dataNum,
+                        DBConvertUtil.converEmptyComment(tableData.mNote.value))
                 connection.prepareStatement(sql).execute()
             }
             connection.commit()

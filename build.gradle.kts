@@ -24,7 +24,7 @@ dependencies {
 }
 
 intellij {
-    version.set("2022.2")
+    version.set("222.3345.118")
     type.set("IC") // Target IDE Platform
     plugins.set(listOf("com.intellij.java","org.jetbrains.kotlin"))
 }
@@ -40,7 +40,7 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("2019.3.1")
+        sinceBuild.set("222.3345.118")
         untilBuild.set("2022.*")
     }
 

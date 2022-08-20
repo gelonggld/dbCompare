@@ -46,7 +46,7 @@ object MysqlTypeMappingKt {
         return bean2DBMap!![beanType.convertInt()] ?: throw TypeMapException("错误的bean类型--$beanType")
     }
 
-    fun put(onlyValue: String, vararg values: String) {
+    private fun put(onlyValue: String, vararg values: String) {
         bean2DBMap!![onlyValue] = values[0]
         for (value in values) {
             db2BeanMap!![value] = onlyValue

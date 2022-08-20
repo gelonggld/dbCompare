@@ -1,75 +1,62 @@
 package com.gelonggld.db2bkg.dialogs
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.ApplicationScope
+import androidx.compose.ui.window.FrameWindowScope
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.application
+import com.gelonggld.db2bkg.Application
 import com.gelonggld.db2bkg.constants.StrConstant
+import com.gelonggld.db2bkg.project
+import com.gelonggld.db2bkg.rootFile
 import com.gelonggld.db2bkg.utils.ProperUtil
 import com.gelonggld.db2bkg.utils.db.SqlUtil
-import com.gelonggld.db2bkg.utils.DialogUtil
+import com.gelonggld.db2bkg.utils.ViewComponent
 import com.gelonggld.db2bkg.utils.codeparse.FileDispatch
 import com.gelonggld.db2bkg.utils.db.bean.MariadbBean
 import com.gelonggld.db2bkg.utils.db.bean.MysqlBean
 import com.gelonggld.db2bkg.utils.db.bean.OracleSqlBean
 import com.gelonggld.db2bkg.utilsBean.ConnectBean
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import javax.swing.*
-import java.awt.event.*
 import java.sql.*
 import java.util.ArrayList
 
-class CheckDialog(private val project: Project, private val virtualFile: VirtualFile) : JDialog() {
-    private lateinit var contentPane: JPanel
-    private lateinit var buttonOK: JButton
-    private lateinit var buttonCancel: JButton
-    private lateinit var jUrl: JTextField
-    private lateinit var jUsername: JTextField
-    private lateinit var jPassword: JTextField
-    private lateinit var jDriver: JTextField
-    private lateinit var errorInfo: JLabel
+class CheckDialog() {
+    private var jdbcUrl = mutableStateOf(ProperUtil.readPath(StrConstant.CONN_URL))
+    private var jUsername = mutableStateOf(ProperUtil.readPath(StrConstant.CONN_USERNAME))
+    private var jPassword = mutableStateOf(ProperUtil.readPath(StrConstant.CONN_PASSWORD))
+    private var jDriver = mutableStateOf(ProperUtil.readPath(StrConstant.CONN_DRIVER))
+    private var errorInfo = mutableStateOf<String?>(null)
 
     private var targetDbTable: String? = null
     private var dbTableNames: ArrayList<String>? = null
 
     private lateinit var connection: Connection
 
-    init {
-        setPanel()
-        setLocal()
-        changeFocus()
-        initPanel()
-    }
 
-    private fun initPanel() {
-        initOk()
-        initCancel()
-        initInput()
-        initSelf()
-        initContentPane()
-    }
-
-    private fun initInput() {
-        jUrl.text = ProperUtil.readPath(StrConstant.CONN_URL)
-        jUsername.text = ProperUtil.readPath(StrConstant.CONN_USERNAME)
-        jPassword.text = ProperUtil.readPath(StrConstant.CONN_PASSWORD)
-        jDriver.text = ProperUtil.readPath(StrConstant.CONN_DRIVER)
-    }
-
-    private fun initSelf() {
-        defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
-        addWindowListener(object : WindowAdapter() {
-            override fun windowClosing(e: WindowEvent?) {
-                onCancel()
+    @Composable
+    fun content() {
+        Scaffold(
+            topBar = { ViewComponent.topBar("创建对象") },
+            floatingActionButton = { FloatingActionButton(onClick = { onOK() }) { Text(text = "确定") } }
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                TextField(jdbcUrl.value, { jdbcUrl.value = it }, label = { Text("jodbUrl") })
+                Row(Modifier.fillMaxWidth()) {
+                    TextField(jUsername.value, { jUsername.value = it }, label = { Text("username") })
+                    TextField(jPassword.value, { jPassword.value = it }, label = { Text("password") })
+                }
+                TextField(jDriver.value, { jDriver.value = it }, label = { Text("driver") })
             }
-        })
+        }
     }
-
-    private fun initContentPane() {
-        contentPane.registerKeyboardAction(
-            { onCancel() },
-            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
-        )
-    }
-
 
     private fun processDBConnent(connectBean: ConnectBean): Boolean {
         connection = connectDb(connectBean)
@@ -86,11 +73,11 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
             SqlUtil.recycleConn(connection)
             return false
         }
-        if (virtualFile.isDirectory) {
+        if (rootFile.isDirectory) {
             showCreateBeanDialog(connectBean.databaseName)
             return true
         } else {
-            targetDbTable = FileDispatch.dispatchFindTargetTable(virtualFile, "Table", "name") ?: let {
+            targetDbTable = FileDispatch.dispatchFindTargetTable(rootFile, "Table", "name") ?: let {
                 error("没有找到表注解")
                 return false
             }
@@ -107,7 +94,7 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
     }
 
     private fun showCompareDialog(targetDbTable: String, dbName: String) {
-        val dbCompareDialog = DBCompareDialog(targetDbTable, dbName, project, virtualFile, connection)
+        val dbCompareDialog = DBCompareDialog(targetDbTable, dbName, project, rootFile, connection)
         dbCompareDialog.pack()
         dbCompareDialog.isVisible = true
     }
@@ -116,14 +103,14 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
         @Suppress("DEPRECATION")
         val javaTableName = allTables(project.baseDir, ArrayList<String>())
         dbTableNames!!.removeAll(javaTableName.toSet())
-        val createBeanDialog = CreateBeanDialog(dbTableNames!!, dbName, connection, virtualFile)
+        val createBeanDialog = CreateBeanDialog(dbTableNames!!, dbName, connection, rootFile)
         createBeanDialog.pack()
         createBeanDialog.isVisible = true
     }
 
 
     private fun showCreateTableDialog(connection: Connection, tableName: String) {
-        val createTableDialog = CreateTableDialog(connection, tableName, virtualFile )
+        val createTableDialog = CreateTableDialog(connection, tableName, rootFile)
         createTableDialog.pack()
         createTableDialog.isVisible = true
     }
@@ -131,7 +118,7 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
 
     private fun error(text: String?): Boolean {
         text?.let {
-            errorInfo.text = text
+            errorInfo.value = text
             return true
         }
         return false
@@ -144,66 +131,52 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
     }
 
 
-    private fun initCancel() {
-        buttonCancel.addActionListener { onCancel() }
-    }
+    fun show() = application {
 
-    private fun initOk() {
-        buttonOK.addActionListener { onOK() }
-    }
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = "db compare"
+        ) {
+            MaterialTheme {
+                Scaffold(
+                    topBar = { ViewComponent.topBar("创建对象") },
+                    floatingActionButton = { FloatingActionButton(onClick = { onOK() }) { Text(text = "确定") } }
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        TextField(jdbcUrl.value, { jdbcUrl.value = it }, label = { Text("jodbUrl") })
+                        Row(Modifier.fillMaxWidth()) {
+                            TextField(jUsername.value, { jUsername.value = it }, label = { Text("username") })
+                            TextField(jPassword.value, { jPassword.value = it }, label = { Text("password") })
+                        }
+                        TextField(jDriver.value, { jDriver.value = it }, label = { Text("driver") })
+                    }
+                }
+            }
+        }
 
-    private fun changeFocus() {
-        contentPane.isFocusable = true
-        contentPane.requestFocus()
-    }
-
-
-    private fun setLocal() {
-        DialogUtil.centSelf(this, 296, 119)
-    }
-
-
-    private fun setPanel() {
-        setContentPane(contentPane)
-        isModal = true
-        getRootPane().defaultButton = buttonOK
     }
 
 
     private fun onOK() {
         // add your code here
-        FileDispatch.assemb(project)
+        FileDispatch.assemb()
         saveProp()
         val connectBean = validateInfo() ?: return
-        if (processDBConnent(connectBean)) {
-            dispose()
-        }
+        processDBConnent(connectBean)
     }
 
     private fun saveProp() {
-        ProperUtil.savePath(StrConstant.CONN_URL, jUrl.text)
-        ProperUtil.savePath(StrConstant.CONN_DRIVER, jDriver.text)
-        ProperUtil.savePath(StrConstant.CONN_USERNAME, jUsername.text)
-        ProperUtil.savePath(StrConstant.CONN_PASSWORD, jPassword.text)
+        ProperUtil.savePath(StrConstant.CONN_URL, jdbcUrl.value)
+        ProperUtil.savePath(StrConstant.CONN_DRIVER, jDriver.value)
+        ProperUtil.savePath(StrConstant.CONN_USERNAME, jUsername.value)
+        ProperUtil.savePath(StrConstant.CONN_PASSWORD, jPassword.value)
     }
 
     private fun validateInfo(): ConnectBean? {
-        val url = jUrl.text ?: let {
-            error("url 不能为空")
-            return null
-        }
-        val drive = jDriver.text ?: let {
-            error("url 不能为空")
-            return null
-        }
-        val username = jUsername.text ?: let {
-            error("url 不能为空")
-            return null
-        }
-        val password: String = jPassword.text ?: let {
-            error("url 不能为空")
-            return null
-        }
+        val url = jdbcUrl.value
+        val drive = jDriver.value
+        val username = jUsername.value
+        val password = jPassword.value
 
         val connectBean = ConnectBean(url, drive, username, password)
         when {
@@ -236,11 +209,6 @@ class CheckDialog(private val project: Project, private val virtualFile: Virtual
                 tableNames.add(it)
             }
         }
-    }
-
-
-    private fun onCancel() {
-        dispose()
     }
 
 

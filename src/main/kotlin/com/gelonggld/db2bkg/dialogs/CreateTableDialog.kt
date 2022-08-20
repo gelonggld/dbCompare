@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import com.gelonggld.db2bkg.model.TableCreate
 import com.gelonggld.db2bkg.utils.db.SqlUtil
 import com.gelonggld.db2bkg.utils.DialogUtil
+import com.gelonggld.db2bkg.utils.ViewComponent.topBar
 import com.gelonggld.db2bkg.utils.codeparse.FileDispatch
 import com.intellij.openapi.vfs.VirtualFile
 import javax.swing.*
@@ -43,7 +44,7 @@ class CreateTableDialog(
     @Composable
     fun content() {
         Scaffold (
-            topBar = { topBar()},
+            topBar = { topBar("创建表")},
             floatingActionButton = { okButton() }
                 ){
             Column (modifier = Modifier.fillMaxSize()){
@@ -70,21 +71,6 @@ class CreateTableDialog(
         Text(tableCreate.dbFieldName.value)
         Text(tableCreate.dbFieldType.value)
         Checkbox(tableCreate.isKt.value,onCheckedChange = { tableCreate.isKt.value = it})
-    }
-
-    @Composable
-    fun topBar() {
-        TopAppBar(
-            title = { Text("创建表") },
-            navigationIcon = {
-                IconButton(onClick = { dispose() }) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = null
-                    )
-                }
-            }
-        )
     }
 
     @Composable

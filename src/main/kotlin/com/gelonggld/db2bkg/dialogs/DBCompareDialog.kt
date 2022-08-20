@@ -28,6 +28,7 @@ import com.gelonggld.db2bkg.model.TableData.Companion.NO_NONE
 import com.gelonggld.db2bkg.model.TableData.Companion.OPT_ADD
 import com.gelonggld.db2bkg.model.TableData.Companion.OPT_DELETE
 import com.gelonggld.db2bkg.model.TableData.Companion.OPT_NONE
+import com.gelonggld.db2bkg.utils.ViewComponent.topBar
 import com.gelonggld.db2bkg.utils.codeparse.FileDispatch
 import javax.swing.*
 import java.awt.event.*
@@ -185,7 +186,7 @@ class DBCompareDialog(private val dbTable: String, dbName: String, private val p
     @Composable
     fun content() {
         Scaffold (
-            topBar = { topBar()},
+            topBar = { topBar("对象比较")},
             floatingActionButton = { okButton() }
         ){
             Column (modifier = Modifier.fillMaxSize()){
@@ -196,22 +197,6 @@ class DBCompareDialog(private val dbTable: String, dbName: String, private val p
                 }
             }
         }
-    }
-
-
-    @Composable
-    fun topBar() {
-        TopAppBar(
-            title = { Text("创建表") },
-            navigationIcon = {
-                IconButton(onClick = { dispose() }) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = null
-                    )
-                }
-            }
-        )
     }
 
     @Composable
