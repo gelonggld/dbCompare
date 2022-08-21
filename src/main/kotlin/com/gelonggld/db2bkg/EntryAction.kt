@@ -11,7 +11,10 @@ class EntryAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         project = e.getData(PlatformDataKeys.PROJECT) ?: return
         rootFile = e.getData(PlatformDataKeys.VIRTUAL_FILE) ?: return
-        CheckDialog().show()
+        val app = Application()
+        app.pack()
+        app.isVisible = true
+
     }
 
 }

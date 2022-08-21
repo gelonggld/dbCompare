@@ -1,13 +1,12 @@
 package com.gelonggld.db2bkg.dialogs
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.Window
@@ -25,6 +24,7 @@ import com.gelonggld.db2bkg.utils.db.bean.MysqlBean
 import com.gelonggld.db2bkg.utils.db.bean.OracleSqlBean
 import com.gelonggld.db2bkg.utilsBean.ConnectBean
 import com.intellij.openapi.vfs.VirtualFile
+import com.openhtmltopdf.css.parser.property.PrimitivePropertyBuilders.VerticalAlign
 import java.sql.*
 import java.util.ArrayList
 
@@ -43,17 +43,31 @@ class CheckDialog() {
 
     @Composable
     fun content() {
-        Scaffold(
-            topBar = { ViewComponent.topBar("创建对象") },
-            floatingActionButton = { FloatingActionButton(onClick = { onOK() }) { Text(text = "确定") } }
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                TextField(jdbcUrl.value, { jdbcUrl.value = it }, label = { Text("jodbUrl") })
-                Row(Modifier.fillMaxWidth()) {
-                    TextField(jUsername.value, { jUsername.value = it }, label = { Text("username") })
-                    TextField(jPassword.value, { jPassword.value = it }, label = { Text("password") })
+        MaterialTheme {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(
+                    modifier = Modifier.fillMaxHeight().width(700.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TextField(jdbcUrl.value, { jdbcUrl.value = it }, Modifier.fillMaxWidth(), label = { Text("jodbUrl") })
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(100.dp)) {
+                        TextField(
+                            jUsername.value,
+                            { jUsername.value = it },
+                            Modifier.weight(1F),
+                            label = { Text("username") })
+                        TextField(
+                            jPassword.value,
+                            { jPassword.value = it },
+                            Modifier.weight(1F),
+                            label = { Text("password") })
+                    }
+                    TextField(jDriver.value, { jDriver.value = it }, Modifier.fillMaxWidth(), label = { Text("driver") })
+                    Button(onClick = { onOK() }, Modifier.fillMaxWidth()) {
+                        Text(text = "确定")
+                    }
                 }
-                TextField(jDriver.value, { jDriver.value = it }, label = { Text("driver") })
             }
         }
     }
@@ -129,33 +143,6 @@ class CheckDialog() {
         Class.forName(connectBean.drive)
         return DriverManager.getConnection(connectBean.url, connectBean.username, connectBean.password)
     }
-
-
-    fun show() = application {
-
-        Window(
-            onCloseRequest = ::exitApplication,
-            title = "db compare"
-        ) {
-            MaterialTheme {
-                Scaffold(
-                    topBar = { ViewComponent.topBar("创建对象") },
-                    floatingActionButton = { FloatingActionButton(onClick = { onOK() }) { Text(text = "确定") } }
-                ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        TextField(jdbcUrl.value, { jdbcUrl.value = it }, label = { Text("jodbUrl") })
-                        Row(Modifier.fillMaxWidth()) {
-                            TextField(jUsername.value, { jUsername.value = it }, label = { Text("username") })
-                            TextField(jPassword.value, { jPassword.value = it }, label = { Text("password") })
-                        }
-                        TextField(jDriver.value, { jDriver.value = it }, label = { Text("driver") })
-                    }
-                }
-            }
-        }
-
-    }
-
 
     private fun onOK() {
         // add your code here
