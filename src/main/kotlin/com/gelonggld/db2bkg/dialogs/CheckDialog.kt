@@ -1,5 +1,6 @@
 package com.gelonggld.db2bkg.dialogs
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -44,9 +45,9 @@ class CheckDialog() {
     @Composable
     fun content() {
         MaterialTheme {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colors.background), contentAlignment = Alignment.Center) {
                 Column(
-                    modifier = Modifier.fillMaxHeight().width(700.dp),
+                    modifier = Modifier.wrapContentHeight().width(700.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
